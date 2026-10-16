@@ -24,4 +24,6 @@ Try:
    /mission Apollo 11 1 minute
 
 Use /help for commands and /quit to exit.
+In full-screen mode, Enter on empty input opens the Milky Way screensaver.
+Press Enter again to return to your previous view.
 Read README.md for setup and README.txt for the full command guide.

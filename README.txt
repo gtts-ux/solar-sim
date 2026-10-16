@@ -129,6 +129,8 @@ simulation time. /now, /realtime or /reset returns to the actual time.
 
 KEYBOARD
 
+    Enter on empty input    Full-screen rotating Milky Way screensaver
+    Enter in screensaver    Return to exactly the previous view
     Tab                     Complete a command or a body name
     Up / Down               Recall this session's command history
     Left / Right            Move input cursor
@@ -283,6 +285,8 @@ FILES
     ephemeris_cache.json       Created after a successful JPL download
     catalog.py                Body data and JPL orbital coefficients
     missions.py               Spacecraft catalogue, status and mission profiles
+    screensaver.py            Smooth colored Milky Way animation
+    test_screensaver.py       Galaxy rendering and view/clock restoration checks
     flight_replay.py          Ten flight timelines, playback clock and routes
     day_lengths.py            Mean solar-day and sidereal-rotation calculations
     test_solar_sim.py         Regression tests for math and commands
@@ -495,3 +499,23 @@ snapshots and exit immediately; they do not wait for a replay to finish.
 
     python3 solar_sim.py --offline -c '/day venus'
     python3 solar_sim.py --offline -c '/mission Apollo 11 1 minute' -c '/mission seek 47'
+
+MILKY WAY SCREENSAVER
+
+In full-screen mode, press Enter on a blank command line (spaces count as
+blank). The whole interface disappears and a colored spiral galaxy rotates
+against a quiet starfield. Press Enter again to return to the same view,
+response, selection and command history. Esc also returns; Ctrl+C or Ctrl+D
+exits the app. Other keys are ignored while the screensaver is open.
+
+The animation uses a separate real-time clock and targets 30 frames per
+second, using Unicode braille for subcell detail. It uses blue/violet arms,
+a warm central glow and subtle stars; 256-color terminals get gradient
+colors, basic terminals get a simpler palette and --no-color stays
+monochrome. It fits terminal resizes without showing interface overlays.
+
+The simulation clock and mission replay pause while the screensaver is
+visible. Returning restores the earlier pause/resume state without skipping
+mission stages. The galaxy is an artistic animation, not an astronomical
+Milky Way model. It is available in the full-screen interface, not --plain
+or one-shot -c output. No packages, images or downloads are needed.

@@ -76,6 +76,8 @@ APP
   /quit                   Exit (/exit also works)
 
 KEYS (full-screen mode)
+  Enter on an empty command opens the Milky Way screensaver; Enter returns.
+  The simulation pauses during the screensaver and resumes its previous state.
   Tab completes names/commands. Up/Down recall commands. Left/Right edit.
   Page Up/Down scroll responses. Ctrl+U clears input. Ctrl+C or Ctrl+D exits.
   Resize the terminal at any time. A larger window shows more detail.

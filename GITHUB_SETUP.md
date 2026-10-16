@@ -15,7 +15,7 @@ git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
 git push -u origin main
 ```
 
-This prepared local folder already has an empty Git repository on branch `main`. If you are using an extracted ZIP instead, run `git init -b main` first. Git may ask you to configure a commit name and email. Authentication is handled by GitHub Desktop, GitHub CLI or your Git credential manager; no token belongs in project files.
+This prepared local folder already has a Git repository on branch `main`. If you are using an extracted ZIP instead, run `git init -b main` first. Git may ask you to configure a commit name and email. Authentication is handled by GitHub Desktop, GitHub CLI or your Git credential manager; no token belongs in project files.
 
 The repository name and account have deliberately not been hardcoded into download links. README links work with any repository name. Select a project license through GitHub's **Add file → Create new file → LICENSE → Choose a license template** when you decide the reuse terms; no license has been assigned in this copy.
 

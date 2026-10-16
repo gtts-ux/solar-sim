@@ -50,6 +50,8 @@ Use a terminal at least **64 columns × 22 rows**; about 120 × 40 is more comfo
 
 In orbit mode, a body name focuses that body's orbit. `/moons jupiter` opens all included Jupiter moon orbits. Dwarf planets have a separate catalogue.
 
+**Milky Way screensaver:** press **Enter on an empty command line** in full-screen mode. The whole interface disappears into a smoothly rotating galaxy with blue/violet spiral arms, a warm core and a subtle starfield. Press **Enter again** to return to the same view. The simulation and any mission playback pause while it is open, then resume their previous state. Esc also returns. Colors adapt to the terminal; `--no-color` stays monochrome. This artistic animation requires no extra packages and is not an astronomical galaxy model.
+
 Mission playback jumps to the historical launch date and reaches return in the duration you choose. Use `/pause`, `/resume`, `/mission seek 50`, `/mission restart` and `/mission stop`. **Esc** returns to the overview. **Tab** completes commands and names. Mission animation requires full-screen mode; plain mode and `-c` show text snapshots.
 
 Included flights: Apollo 8, 11, 13 and 17; Artemis I and II; SpaceX Demo-2 and Crew-1; Inspiration4; Polaris Dawn. Each follows its own stages, including landing, flyby, abort or ISS docking where appropriate.

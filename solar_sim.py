@@ -11,6 +11,7 @@ from engine import COMMANDS, Simulation
 from missions import SPACECRAFT, Spacecraft
 from day_lengths import day_label
 from flight_replay import FLIGHTS
+from screensaver import show_screensaver
 
 WELCOME = f"""WELCOME TO YOUR OBSERVATORY
 
@@ -22,6 +23,7 @@ Explore the giants with /moons jupiter and /view saturn.
 The clock follows the actual current UTC time. /orbit opens full-screen orbits.
 Use /speed 3 to accelerate, /realtime to return to now, /sync status for JPL data.
 Tab completes commands; Up/Down recall history; Page Up/Down scroll results.
+Full-screen: Enter on an empty line opens the Milky Way; Enter returns.
 
 JPL Horizons positions download in the background; offline fallbacks are labeled.
 Try /day earth or /mission Apollo 11 1 minute for a timed historical flight.
@@ -301,7 +303,7 @@ def tui(screen, sim, no_color=False):
             write(h-3,4,command[start:start+available])
             if not command:
                 write(h-3,4,"Type a slash command…",8)
-            write(h-2,2,"TAB complete  ↑↓ history  PgUp/PgDn scroll  Esc overview  Ctrl+C exit",8)
+            write(h-2,2,"Enter empty: galaxy  Tab complete  ↑↓ history  Esc overview  Ctrl+C exit",8)
             try:
                 curses.curs_set(1)
                 screen.move(h-3,4+cursor-start)
@@ -326,6 +328,8 @@ def tui(screen, sim, no_color=False):
                 history = history[-300:]
                 response = sim.command(command)
                 scroll = 0
+            else:
+                show_screensaver(screen,sim,colors)
             command, cursor, draft = "",0,""
             history_index = len(history)
         elif key in (curses.KEY_BACKSPACE,"\x7f","\b"):
