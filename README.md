@@ -71,6 +71,6 @@ python3 tools/build_release.py
 
 The build command creates `dist/solar-sim.zip` and a SHA-256 checksum. The package includes launchers, documentation, source and tests; it excludes Git history, local caches and exports. Extract it before running. GitHub checks cover Python 3.10 and 3.14 on Linux plus Python 3.14 on macOS and Windows. Those remote checks run after this repository is uploaded.
 
-For publishing instructions, see [GITHUB_SETUP.md](GITHUB_SETUP.md). Publishing a GitHub release triggers a workflow that tests, builds and attaches the ZIP and checksum. No repository has been published by the local preparation step.
+For publishing instructions, see [GITHUB_SETUP.md](GITHUB_SETUP.md). Pushing a version change on `main` triggers a workflow that tests, builds and publishes the release ZIP and checksum. The workflow can also run manually or attach assets to a release published through GitHub.
 
 No project license has been selected. The maintainer can add one using GitHub's license template before offering reuse under an open-source license.

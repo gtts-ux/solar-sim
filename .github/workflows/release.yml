@@ -1,6 +1,12 @@
 name: Release ZIP
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - VERSION.txt
+      - .github/workflows/release.yml
+  workflow_dispatch:
   release:
     types: [published]
 
@@ -19,13 +25,32 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
+      - name: Resolve release version
+        env:
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION=$(cat VERSION.txt)
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          RELEASE_TAG="v$VERSION"
+          if [ -n "$EVENT_TAG" ] && [ "$EVENT_TAG" != "$RELEASE_TAG" ]; then
+            echo "Release tag does not match VERSION.txt"
+            exit 1
+          fi
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
       - name: Test before packaging
         run: python -m unittest -v
       - name: Build source download and checksum
         run: python tools/build_release.py
-      - name: Attach download to the published release
+      - name: Publish ZIP and checksum
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$RELEASE_TAG" dist/solar-sim.zip dist/solar-sim.zip.sha256 --clobber
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --target "$RELEASE_COMMIT" \
+              --title "Solar Sim $RELEASE_TAG" --draft \
+              --notes 'Download solar-sim.zip and extract the whole archive. Python 3.10 or newer is required. Follow START_HERE.txt for macOS, Linux, and Windows launch instructions. The SHA-256 checksum is included as a separate asset.'
+          fi
+          gh release upload "$RELEASE_TAG" dist/solar-sim.zip dist/solar-sim.zip.sha256 --clobber
+          gh release edit "$RELEASE_TAG" --draft=false --latest

@@ -24,9 +24,9 @@ The repository name and account have deliberately not been hardcoded into downlo
 People can immediately use **Code → Download ZIP**, extract it and follow README.md. To offer a clearly named release download:
 
 1. Update `VERSION.txt` for each release. The first prepared version is `1.0.0`.
-2. Push that change and wait for **Checks** in the Actions tab to pass.
-3. Open **Releases → Draft a new release**. Create tag `v1.0.0` against `main`, give it a title and publish it.
-4. The **Release ZIP** workflow tests the tagged project and attaches `solar-sim.zip` and `solar-sim.zip.sha256` to the release. If the workflow fails, its Actions log explains the error; the ZIP is available only after a successful run.
+2. Push that change to `main`. The **Release ZIP** workflow runs automatically when `VERSION.txt` or its workflow file changes.
+3. The workflow tests and packages the project, creates the corresponding release (for example `v1.0.0`), attaches `solar-sim.zip` and `solar-sim.zip.sha256`, then publishes it. If the workflow fails, its Actions log explains the error; the release is published only after the assets are uploaded.
+4. You can also start **Release ZIP** manually from the Actions tab. Publishing a release through GitHub still triggers attachment of the matching version's ZIP and checksum.
 5. Share your repository's Releases page. After the asset is attached, a direct latest-release link has this form:
 
 ```text
