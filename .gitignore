@@ -1,0 +1,26 @@
+# Python runtime files
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local astronomy data and exported snapshots
+ephemeris_cache.json
+ephemeris_cache.*.tmp
+exports/
+
+# Generated downloads
+dist/
+build/
+*.egg-info/
+
+# Operating-system and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+
+# Local environment files
+.env
+.env.*

@@ -1,0 +1,27 @@
+SOLAR SIM - QUICK START
+======================
+
+1. Extract the entire ZIP. Do not run files from inside an archive.
+2. Install Python 3.10 or newer from https://www.python.org/downloads/
+   Python is required; it is not included in this download.
+3. Open the extracted folder:
+
+   Mac:     Double-click Start Solar Sim.command
+   Linux:   Open a terminal here: sh "Start Solar Sim.sh"
+   Windows: Double-click Start Solar Sim.bat (text mode)
+
+If the Mac launcher will not open, open a terminal here and type:
+   sh "Start Solar Sim.command"
+
+Use macOS or Linux for the full-screen animated interface.
+Make the terminal at least 64 columns by 22 rows.
+
+Try:
+   /planet
+   /orbit
+   /day earth
+   /mission list
+   /mission Apollo 11 1 minute
+
+Use /help for commands and /quit to exit.
+Read README.md for setup and README.txt for the full command guide.

@@ -1,0 +1,155 @@
+SOLAR SIM / astronomy sources
+Catalogue checked: 2026-10-16. Values are rounded for education.
+
+NASA/JPL Solar System Dynamics
+Approximate Positions of the Planets, Table 1 (1800-2050):
+https://ssd.jpl.nasa.gov/planets/approx_pos.html
+Used for the Keplerian coefficients and century rates in catalog.py.
+Earth is represented by the Earth-Moon barycenter in this model.
+
+NASA Planetary Fact Sheets:
+https://nssdc.gsfc.nasa.gov/planetary/factsheet/
+https://nssdc.gsfc.nasa.gov/planetary/factsheet/planet_table_ratio.html
+https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html
+https://nssdc.gsfc.nasa.gov/planetary/factsheet/marssatfact.html
+https://nssdc.gsfc.nasa.gov/planetary/factsheet/joviansatfact.html
+https://nssdc.gsfc.nasa.gov/planetary/factsheet/saturniansatfact.html
+https://nssdc.gsfc.nasa.gov/planetary/factsheet/uraniansatfact.html
+https://nssdc.gsfc.nasa.gov/planetary/factsheet/neptuniansatfact.html
+Physical quantities, approximate temperatures, spin and orbital periods.
+The app uses rounded mean radii; some NASA tables instead list equatorial
+diameters or three-axis dimensions. Do not mix radius conventions.
+
+NASA/JPL satellite references:
+https://ssd.jpl.nasa.gov/sats/phys_par/
+https://ssd.jpl.nasa.gov/sats/elem/
+Physical parameters and mean orbit elements. App moon orbits use simplified
+ellipses and illustrative phases/planes, not full satellite ephemerides.
+
+NASA Science / body and moon overviews:
+https://science.nasa.gov/sun/facts/
+https://science.nasa.gov/solar-system/solar-system-facts/
+https://science.nasa.gov/solar-system/moons/facts/
+https://science.nasa.gov/mercury/facts/
+https://science.nasa.gov/venus/venus-facts/
+https://science.nasa.gov/earth/facts/
+https://science.nasa.gov/mars/facts/
+https://science.nasa.gov/jupiter/jupiter-facts/
+https://science.nasa.gov/saturn/facts/
+https://science.nasa.gov/uranus/facts/
+https://science.nasa.gov/neptune/facts/
+
+Known-moon counts use the dedicated moon pages, which can be newer than
+the summary fact sheet. Counts are snapshots, not live network data:
+https://science.nasa.gov/jupiter/jupiter-moons/
+    115 officially recognized moons, August 2026.
+https://science.nasa.gov/saturn/moons/
+    293 confirmed moons, August 2026.
+https://science.nasa.gov/uranus/moons/facts/
+    29 known moons, August 2026.
+https://science.nasa.gov/neptune/moons/
+    16 officially recognized moons.
+
+Composition, atmospheres and notable features are concise educational
+descriptions, not verbatim NASA articles. Proposed internal oceans are
+not treated as confirmed discoveries. Small-moon masses may be poorly
+constrained; estimated values are flagged in profiles and exports.
+
+Physics constants:
+    G = 6.67430e-11 m^3 kg^-1 s^-2
+    1 astronomical unit = 149,597,870.7 km
+    Speed of light = 299,792.458 km/s
+Density, spherical gravity and escape velocity are calculated locally.
+All astronomy reference links can be read independently in a browser;
+the offline model works without a connection.
+
+CURRENT VECTOR POSITIONS / NASA/JPL Horizons API
+https://ssd-api.jpl.nasa.gov/doc/horizons.html
+https://ssd.jpl.nasa.gov/api/horizons.api
+Version 1.3. State vectors: heliocentric center 500@10, J2000 ecliptic
+ICRF, UT timestamps, KM-S, geometric VEC_CORR=NONE, VEC_TABLE=2.
+15-minute samples are interpolated with a cubic Hermite polynomial;
+there is no extrapolation. Paths use current-state osculating ellipses when JPL data is available;
+otherwise the offline Kepler model is used.
+Cached data and fallback sources are labeled per body in the interface.
+
+DWARF PLANETS / separate catalogue
+https://science.nasa.gov/dwarf-planets/ceres/facts/
+https://science.nasa.gov/dwarf-planets/pluto/facts/
+https://science.nasa.gov/dwarf-planets/haumea/
+https://science.nasa.gov/dwarf-planets/makemake/
+https://science.nasa.gov/dwarf-planets/eris/
+https://science.nasa.gov/solar-system/planet-sizes-and-locations-in-our-solar-system/
+https://ssd.jpl.nasa.gov/planets/phys_par.html
+https://science.nasa.gov/dwarf-planets/pluto/moons/
+https://ssd.jpl.nasa.gov/sats/phys_par/sep.html
+Eris synchronous rotation (newer than the old 25.9-hour estimate):
+https://arxiv.org/abs/2303.13445
+Haumea shape / approximate volume-equivalent radius:
+https://arxiv.org/abs/1904.00522
+Dwarf offline phases and planes are illustrative, not JPL elements.
+Horizons targets: Ceres 1;, Pluto 999, Haumea 136108;, Makemake 136472;,
+Eris 136199;, Charon 901. Dwarf moon counts are separate from included
+orbits. Only Charon currently has a dwarf-moon orbit in this catalogue.
+
+ARTIFICIAL SATELLITES / status snapshot 2026-10-16
+https://www.nasa.gov/international-space-station/space-station-facts-and-figures/
+https://en.cmse.gov.cn/
+https://science.nasa.gov/mission/hubble/
+https://science.nasa.gov/mission/odyssey/
+https://science.nasa.gov/mission/mars-reconnaissance-orbiter/
+https://www.esa.int/Science_Exploration/Space_Science/Mars_Express
+https://www.esa.int/Science_Exploration/Human_and_Robotic_Exploration/Exploration/ExoMars/Trace_Gas_Orbiter
+https://www.space.gov.ae/en/
+https://arxiv.org/abs/2603.10350
+https://www.nasa.gov/news-release/nasa-says-farewell-to-maven-mars-mission-hosts-media-call-today/
+https://science.nasa.gov/mission/juno/
+https://cosmos.isas.jaxa.jp/our-last-presence-at-venus-has-gone-silent/
+https://science.nasa.gov/mission/dawn/mission-status/
+https://science.nasa.gov/mission/lro/
+https://www.esa.int/Science_Exploration/Space_Science/BepiColombo/BepiColombo_factsheet
+https://www.esa.int/Science_Exploration/Space_Science/BepiColombo/Latest_updates_BepiColombo_s_arrival_at_Mercury
+https://www.cosmos.esa.int/web/bepicolombo/mpo
+https://www.space.gov.ae/ar/media-center/news/19/7/2026/hope-probe-marks-six-years-of-scientific-leadership-in-mars-exploration
+
+Spacecraft mass, span and orbit dimensions are rounded nominal educational
+values, not current telemetry. Phases/nodes are synthetic. Inactive missions
+are labeled; Juno's present operational status is not independently confirmed.
+Mercury MPO/Mio are planned, not current, and appear only in explicit previews.
+Planetary flybys and spacecraft that impacted a planet are not added as current
+orbiters. No artificial-satellite ephemeris or live ISS tracking is claimed.
+
+MEAN SOLAR DAY / SIDEREAL ROTATION
+https://nssdc.gsfc.nasa.gov/planetary/factsheet/
+https://science.gsfc.nasa.gov/attic/cosmicopia.gsfc.nasa.gov/qa_earth.html
+Solar-day estimate: 1 / abs(1 / signed_spin_hours - 1 / year_hours).
+For moons, year_hours is the parent world's solar orbital period.
+This is a mean approximation; it omits eccentricity and obliquity variations.
+
+HISTORICAL FLIGHT REPLAYS / checked 2026-10-16
+https://www.nasa.gov/mission/apollo-11/
+https://history.nasa.gov/afj/ap11fj/
+https://www.nasa.gov/mission/apollo-8/
+https://www.nasa.gov/mission/apollo-13/
+https://www.nasa.gov/history/detailed-chronology-of-events-surrounding-the-apollo-13-accident/
+https://www.nasa.gov/mission/apollo-17/
+https://www.nasa.gov/mission/artemis-i/
+https://www.nasa.gov/mission/artemis-ii/
+https://www.nasa.gov/news-release/liftoff-nasa-launches-astronauts-on-historic-artemis-moon-mission/
+https://www.nasa.gov/blogs/missions/2026/04/02/artemis-ii-flight-day-2-crew-houston-poll-go-for-translunar-injection-burn/
+https://www.nasa.gov/blogs/missions/2026/04/06/artemis-ii-flight-day-6-crew-wraps-historic-lunar-flyby/
+https://www.nasa.gov/nasas-spacex-demo-2-resources-archive/
+https://www.spacex.com/launches/demo2
+https://www.nasa.gov/news-release/crew-1-astronauts-safely-splash-down-after-space-station-mission/
+https://inspiration4.com/
+https://www.spacex.com/launches/inspiration4
+https://www.spacex.com/launches/polarisdawn
+https://polarisprogram.com/polaris-dawn-crew-returns-to-earth-achieving-major-objectives-during-their-five-day-mission/
+
+Launch/return dates and major milestones are historical, rounded to minutes.
+Intermediate visual transitions are approximate educational cues, not precise
+telemetry events. Artemis II flew April 1-10, 2026 local dates; splashdown is
+April 11 00:07 UTC. It flew around the Moon without orbit capture or landing.
+Mission routes, orbital turns, separation and spacecraft positions are
+schematic. Replay compression varies by stage to keep short events visible.
+No historical spacecraft state vectors or N-body flight dynamics are used.

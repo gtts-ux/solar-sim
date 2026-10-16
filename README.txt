@@ -1,0 +1,497 @@
+SOLAR / SIM
+A terminal observatory with current JPL positions and offline support
+======================================================================
+
+START / PORTABLE GITHUB COPY
+
+Double-click "Start Solar Sim.command" in this folder. It opens Terminal
+and runs the app. If Finder asks which app to use, select Terminal.
+
+Or paste this in Terminal:
+
+    cd /path/to/extracted/solar-sim
+    python3 solar_sim.py
+
+Requires Python 3.10 or newer, installed separately. No pip packages, account or API key needed. Current JPL data needs internet;
+the offline approximation works without a connection.
+On Windows the plain interface works with Python; full-screen mode
+requires curses, normally included on macOS and Linux.
+
+If double-clicking is blocked by macOS, use the Terminal command above.
+For a basic terminal or screen reader:
+
+    python3 solar_sim.py --plain
+
+Disable colors with --no-color or the NO_COLOR environment variable.
+For full-screen mode, use at least 64 columns by 22 rows. Around 120 by
+40 shows a system overview, selected-body card and larger response panel.
+/orbit opens the full-screen map. At 108+ columns, the solar view shows
+inner and outer planets separately so all eight orbits are readable.
+
+FIRST THINGS TO TRY
+
+    /planet
+    /earth
+    /sun
+    /moons jupiter
+    /europa
+    /orbit jupiter
+    /back
+    /speed 0.2
+    /pause
+    /step 1
+    /resume
+    /view solar
+    /compare earth titan
+    /weight 70 mars
+    /distance earth mars
+    /day earth
+    /mission list
+    /mission Apollo 11 1 minute
+    /info
+    /help
+
+Names are case-insensitive. /"Earth" works too. /planet earth and
+/moon titan are alternate profile commands. Quotes around a multiword
+alias work: /"the moon". /planets is an alias for /planet.
+
+COMMAND REFERENCE
+
+    /planet                 All eight planets, in solar order
+    /planet NAME            Detailed planet profile
+    /NAME                   Profile of any included body, e.g. /titan
+    /moon NAME              Detailed moon profile
+    /day [NAME]             Mean solar day and sidereal rotation
+    /mission list           List ten historical flight replays
+    /mission NAME DURATION  Full-screen launch-to-return animation
+    /mission info NAME      Historical chronology, vehicle and references
+    /mission pause          Pause a replay (/pause also works)
+    /mission resume         Continue a replay (/resume also works)
+    /mission seek PERCENT   Jump within playback, e.g. /mission seek 50
+    /mission restart        Replay from launch with the same duration
+    /mission status         Current stage, date and playback progress
+    /mission stop           Stop replay; keep historical date paused
+    /satellites [PLANET]     Selected spacecraft; orbit view when in orbit mode
+    /iss /mro /juno          Spacecraft profile, or orbit focus in orbit mode
+    /satellites mercury preview  Planned BepiColombo science orbits
+    /moons [PLANET]         Included moon profiles, grouped by planet
+                            In orbit mode: all included moon orbits together
+                            /mooons is also accepted as an alias
+    /dwarf                  Switch to the five dwarf planets
+    /dwarf exit             Restore the normal eight-planet catalogue
+    /search WORDS           Search names, features and composition
+    /compare NAME NAME      Distance, light time, physical data and profiles
+                            Quotes work: /compare "Earth" "Titan"
+    /weight KG NAME         Weight force and Earth kg-scale equivalent
+    /distance NAME NAME     Distance and one-way light travel time
+    /random                 Random body profile
+
+    /orbit [VIEW]           Full-screen orbits with numbered paths and legend
+    /back                   Return to overview (Esc also works)
+    /NAME in orbit mode     Focus that body's orbit around its parent
+                            /earth shows Earth's orbit around the Sun
+                            /europa shows Europa's orbit around Jupiter
+                            /sun returns to the solar-system orbits
+    /realtime               Follow actual UTC at 1x
+    /sync                   Download JPL positions in the background
+    /sync status            Progress and connection errors
+    /view solar             All eight planets orbiting the Sun
+    /view inner             Mercury, Venus, Earth and Mars
+    /view outer             Jupiter, Saturn, Uranus and Neptune
+    /view NAME              A planet and its included moons
+    /focus NAME             Select a body and view its local system
+    /map [VIEW]             Print a static terminal map
+    /speed NUMBER           Earth days per real second; negative reverses
+    /pause                  Freeze simulation time
+    /resume                 Resume at the configured speed
+    /step DAYS              Jump by a positive or negative number of days
+    /date YYYY-MM-DD        Set simulation date in UTC
+    /time                   Current date, speed, view and pause state
+    /now                    Follow current real time at 1x
+    /reset                  Reset clock, speed, view and display settings
+    /scale fit              Expanded spacing, all orbits easier to see
+    /scale linear           True relative distances; inner orbits overlap
+    /labels on|off          Show or hide orbiting-body names
+    /trails on|off          Show or hide dotted orbit paths
+    /export                 JSON snapshot in exports/ beside these files
+
+    /info                   Model and data accuracy notes
+    /sources                Astronomy source links
+    /help                   Command reference and keyboard shortcuts
+    /clear                  Clear response panel
+    /quit                   Exit; /exit also works
+
+ISO date-times also work, e.g. /date 2030-01-01T12:00:00Z.
+Valid simulation dates are 1800-01-01 through 2049-12-31 UTC.
+At a boundary, time pauses automatically. /speed 0 also holds time.
+The default clock follows the real UTC time at 1x. /speed and /date enter
+simulation time. /now, /realtime or /reset returns to the actual time.
+
+KEYBOARD
+
+    Tab                     Complete a command or a body name
+    Up / Down               Recall this session's command history
+    Left / Right            Move input cursor
+    Home / End              Start / end of input (Ctrl+A / Ctrl+E too)
+    Backspace / Delete      Edit input
+    Ctrl+U                  Clear input
+    Ctrl+K                  Delete input after the cursor
+    Ctrl+L                  Redraw the screen
+    Esc                     Leave orbit view or stop a mission replay
+    Page Up / Page Down     Scroll response panel
+    Ctrl+C / Ctrl+D         Exit cleanly
+
+On a MacBook, Page Up/Down is usually Fn+Up/Down. History is in memory
+only. Resizing the terminal preserves the simulation and current input.
+Profile responses capture their command-time values; the live map and
+clock continue updating. Run the profile or comparison again for updated
+coordinates and distance. The dashboard distances and orbit markers update live.
+Plain mode updates time when a command is submitted; /map prints the
+current frame. Full-screen mode animates continuously.
+
+ONE-SHOT / SCRIPT USAGE
+
+    python3 solar_sim.py -c /planet
+    python3 solar_sim.py -c /earth
+    python3 solar_sim.py -c "/date 2030-01-01" -c "/distance earth mars"
+    python3 solar_sim.py -c "/view jupiter" -c /map
+
+Repeat -c for sequential commands in one simulation. In this mode time
+starts paused, making exports and scripted dates stable. /resume can
+explicitly restart the clock. Standard input can also be piped in plain
+mode. Full-screen mode does not run when output is redirected.
+
+WHAT IS INCLUDED
+
+    Sun
+    Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune
+    Earth: Moon
+    Mars: Phobos, Deimos
+    Jupiter: Amalthea, Io, Europa, Ganymede, Callisto
+    Saturn: Mimas, Enceladus, Tethys, Dione, Rhea, Titan, Hyperion,
+            Iapetus, Phoebe
+    Uranus: Miranda, Ariel, Umbriel, Titania, Oberon
+    Neptune: Proteus, Triton, Nereid
+
+Separate dwarf catalogue: Ceres, Pluto, Haumea, Makemake and Eris.
+Charon is included as Pluto's major moon. Other dwarf moons currently
+have known counts but no simulated orbits in this catalogue.
+
+Total: 40 natural bodies (including 26 selected moons), plus 16 spacecraft. Giant-planet known-moon
+totals are larger than the selected profiles. Small irregular moons,
+comets and asteroids are outside this simulation's scope.
+
+Profiles include mass, mean radius/diameter, derived density, gravity,
+escape speed, Earth comparisons, temperature, composition, atmosphere,
+orbital period, orbital distances, eccentricity and rotation. Planet
+profiles include axial tilt, rings and known/included moon lists.
+The Sun profile uses a latitude-dependent rotation note. Hyperion has
+chaotic rotation; Phoebe and Nereid have independent spin notes.
+
+CURRENT POSITIONS AND ACCURACY
+
+Interactive launches automatically request NASA/JPL Horizons data in a
+background thread, one request at a time: eight planets, their 25 moons,
+the five dwarf planets, and Charon.
+No input blocks while syncing. /sync retries; /sync status reports errors.
+Use --offline to disable automatic requests. One-shot -c commands avoid
+automatic downloads; explicit -c /sync waits for the download to finish.
+
+Data consists of heliocentric J2000 ecliptic geometric positions (km)
+and velocities (km/s), sampled in UT every 15 minutes for about 26 hours.
+Cubic Hermite interpolation evaluates current positions between samples.
+Data is cached beside the app. It is never extrapolated beyond its time
+window; missing or expired data uses the labeled offline model. In real
+time mode the app checks for renewal, with a five-minute retry interval.
+Sources are shown for each body: JPL, offline approximation or illustrative
+moon orbit. A JPL moon marker uses its actual ephemeris, not an arbitrary
+phase. Approximate moon positions are still explicitly labeled.
+
+The full-screen map uses numbered colored paths and [number] markers for
+current positions. Its legend identifies each body, parent distance and
+source. Wide solar views separate inner/outer planets with independent
+linear scales. /orbit inner, /orbit outer and /orbit jupiter zoom to
+particular systems. /scale fit expands spacing; /scale linear preserves
+distance ratios. Symbols are enlarged at every scale. Escape returns
+to the overview. Opening a comparison also returns there.
+
+While in orbit mode, a body name such as /earth, /titan or /"the moon"
+stays in orbit mode and focuses that object's own orbit around its parent.
+/planet earth and /moon europa work the same way in orbit mode. /sun
+or /orbit solar returns to the whole solar system. /orbit jupiter still
+shows Jupiter's full moon system. Outside orbit mode, body names open
+their detailed information profiles. /compare returns to the overview.
+
+/compare "Earth" "Moon" shows current center-to-center distance in km
+and AU, one-way light time, both position sources, physical comparisons
+and information about each body. /distance offers just the separation.
+Distances use the same positions as the map at the printed timestamp;
+light time is geometric distance / c, not an observer-corrected solution.
+
+OFFLINE MODEL
+
+This is an educational orbital simulation. It does not integrate N-body
+gravity. Offline planets follow NASA/JPL approximate Keplerian elements with
+rates, using a numerical solution of Kepler's equation and 3D ecliptic
+coordinates. JPL Table 1 fits 1800-2050; this app limits dates to before
+2050-01-01. The Earth-Moon barycenter is used for Earth's position.
+The Sun stays at the origin; solar galactic motion is not simulated.
+UTC substitutes for dynamical time. Light-time, observer position,
+mutual perturbations beyond the fitted rates and relativistic effects
+are not modeled. Coordinates are approximate, not telescope guidance.
+
+Offline moons follow fixed ellipses with approximate real orbital distances,
+eccentricities and periods. Starting phases and orbital planes are
+illustrative, so these are not predictions of actual moon positions.
+Triton and Phoebe orbit retrograde. No precession, tidal evolution,
+eclipse/shadow, spin-surface or collision simulation is included.
+
+Maps project positions from above the ecliptic. The optional fit scale
+spreads orbits to improve readability; default linear scale uses distance
+ratios. Bodies are always drawn as enlarged terminal symbols. /view
+opens local moon systems so they remain visible. Markers are compact, with no globe graphics. Dotted trails are full orbit paths, not historical tracks. When both
+body and parent JPL state vectors are available, each path is an
+osculating ellipse computed from their relative position and velocity,
+including the actual instantaneous orbital plane. It approximates the
+current orbit; future gravitational perturbations are not integrated.
+
+Mass means kilograms. Weight is gravitational force in newtons; the
+weight calculator also gives an Earth-calibrated scale equivalent.
+Spherical gravity, escape speed and density are derived from mass and
+mean radius. Oblateness, latitude, rotation and altitude are omitted.
+Giant planets and the Sun have no solid surface: their reference-radius
+weight is only a mathematical comparison. Estimated moon masses carry
+uncertainty into derived quantities. Proteus and Nereid are marked.
+
+Planet radii are mean radii, not equatorial diameters from some tables.
+Spin periods are sidereal; they differ from sunrise-to-sunrise days.
+Negative spin values mean retrograde. Temperatures are representative
+surface or atmospheric values, not time-dependent predictions.
+Interior models and possible oceans are uncertain where indicated.
+
+Moon counts checked 2026-10-16: Jupiter 115, Saturn 293, Uranus 29
+(NASA August 2026 pages), Neptune 16. Discoveries and confirmations
+change these totals. The offline catalogue never silently updates.
+See SOURCES.txt for source links and provenance.
+
+FILES
+
+    Start Solar Sim.command   macOS launcher
+    solar_sim.py              Terminal UI, plain mode, CLI entry point
+    engine.py                 Clock, orbital math, maps, slash commands
+    ephemeris.py              NASA/JPL download, cache and interpolation
+    ephemeris_cache.json       Created after a successful JPL download
+    catalog.py                Body data and JPL orbital coefficients
+    missions.py               Spacecraft catalogue, status and mission profiles
+    flight_replay.py          Ten flight timelines, playback clock and routes
+    day_lengths.py            Mean solar-day and sidereal-rotation calculations
+    test_solar_sim.py         Regression tests for math and commands
+    README.txt                This guide
+    SOURCES.txt               Astronomy reference links
+    exports/                  Created only when /export is used
+
+RUN CHECKS
+
+    python3 -m unittest -v test_solar_sim.py
+
+TROUBLESHOOTING
+
+If python3 is missing or older than 3.10, install current Python 3 from
+https://www.python.org/downloads/ and reopen Terminal.
+If full-screen graphics are garbled, try Terminal.app with a UTF-8
+locale, enlarge the window, or use --plain. --no-color disables colors.
+See README.md for macOS, Linux and Windows startup instructions.
+The app does not read personal files. It contacts only the public NASA/JPL
+Horizons API to retrieve astronomy data. --offline disables automatic
+requests; /sync explicitly enables them. Cache and export files stay in
+this folder. /export writes only into its exports directory. To remove the app,
+delete this folder.
+
+MOON SYSTEMS AND DWARF MODE
+
+In orbit mode, /moons jupiter (or /mooons jupiter) opens the full system
+of all included Jupiter moons. It works for every planet. The notice
+states included orbits versus the known-moon total, since this catalogue
+models major moons, not every small irregular satellite. Mercury and
+Venus explicitly say they have no moons. /europa still focuses Europa's
+own orbit; /moons jupiter expands back to the full included moon system.
+Outside orbit mode, /moons continues to show the text catalogue.
+
+/dwarf enters a separate catalogue containing Ceres, Pluto, Haumea,
+Makemake and Eris. If already in orbit mode, it shows their orbits;
+otherwise it lists them. Maps, lists, search, random picks, completion
+and direct body commands follow the selected catalogue. Dwarfs do not
+appear among the normal planets. /dwarf exit restores the eight regular
+planets and the solar view. Enter /orbit after /dwarf for full-screen
+orbits, or /pluto for its profile (its own orbit if already in orbit mode).
+
+Charon is included for Pluto. /moons pluto shows its orbit and reports
+that Pluto has five known moons but one included orbit. /moons ceres
+says there are no moons. Haumea, Makemake and Eris report their known
+moons and explain that their moon orbits are not yet in this catalogue;
+they never incorrectly say those worlds have no moons.
+
+New dwarf positions use JPL Horizons whenever data is available.
+Offline dwarf sizes, periods and eccentricities are rounded physical
+values, but their starting phases and orbital planes are illustrative.
+They are explicitly labeled and should not be used as current-position
+predictions. Haumea's radius is an approximate volume-equivalent value
+for an elongated body. Makemake's mass is estimated. Pluto-Charon is
+simplified to parent/child motion offline, rather than a full binary
+barycentric model. Charon's offline phase/plane is illustrative too.
+
+ARTIFICIAL SATELLITES / COMPACT MARKERS
+
+The globe graphics have been removed. Orbit maps again use compact numbered
+markers, with O for the central planet/moon and * for the Sun.
+
+    /satellites                List the selected human-made spacecraft
+    /satellites earth           ISS, Tiangong and Hubble
+    /satellites mars            Seven selected Mars orbiters, including
+                                inactive MAVEN with its status clearly marked
+    /orbit                     Enter orbit mode, then use /satellites earth
+    /iss                       Focus ISS around Earth when in orbit mode
+    /mro                       Focus MRO around Mars when in orbit mode
+    /orbit mars                Show Mars's moons and included spacecraft
+    /moons mars                Show only Phobos and Deimos in orbit mode
+    /satellites mercury        List upcoming BepiColombo MPO and Mio
+    /satellites mercury preview Explicitly draw their planned science ellipses
+
+For spacecraft motion at a convenient demonstration speed, try /speed 0.001.
+/realtime returns to the real clock. /scale fit separates close orbit paths.
+/satellite is also accepted as an alias for /satellites.
+
+Included missions:
+    Earth: ISS, Tiangong, Hubble
+    Mars: Odyssey, MRO, MarsExpress, TGO, Hope, Tianwen1, MAVEN
+    Venus: Akatsuki (inactive; mission terminated September 2025)
+    Jupiter: Juno (orbiter; current operations not independently verified)
+    Moon: LRO
+    Ceres: Dawn (inactive, remains in orbit; requires /dwarf mode)
+    Mercury: MPO and Mio (UPCOMING, not current orbiters)
+
+This is a selected stations/science catalogue, not all thousands of Earth
+satellites. It does not silently treat a flyby as an orbit: Voyager and
+New Horizons are not added as planetary satellites. Cassini impacted Saturn
+in 2017 and has no current orbit. Missions before their actual insertion
+are not drawn as orbiters at that selected simulation date. Status values
+are a catalogue snapshot checked 2026-10-16, not a live operations feed.
+
+ESA schedules BepiColombo's joined MPO/Mio stack to enter Mercury orbit on
+21 November 2026. Separation is planned for 9-10 December and science for
+April 2027. The app lists both orbiters as upcoming. They are not drawn in
+the current Mercury satellite view, even if a future simulation date is
+selected; only an explicit preview shows the planned science ellipses.
+Those ellipses are not the cruise trajectory or initial capture orbit.
+
+Spacecraft positions are illustrative nominal ellipses with synthetic
+starting phases and ascending nodes. Nominal inclination is included.
+Periods are derived from those approximate ellipses. There is no live ISS
+position feed, TLE/SGP4 propagation, drag, maneuvers or current mission
+trajectory solution. Exact ISS visibility cannot be inferred from this
+model. Old/inactive orbiters use representative past orbital parameters.
+
+Mission profiles show approximate configuration-dependent mass/span,
+agency, destination, status, nominal altitude range and source links.
+Density, surface gravity and escape speed are not assigned to spacecraft
+in the interface; /weight requires a natural body. Comparisons can include
+spacecraft but their position/distance is explicitly illustrative. Upcoming
+craft have no current comparison distance; exports give them null positions.
+Planet and moon JPL ephemerides continue working as before.
+
+DAY LENGTH
+
+Every natural-body profile now includes its approximate mean solar day.
+Use /day earth, /day mercury or /day moon for a fuller explanation.
+/day with no name uses the selected body. Dwarf bodies follow the same
+catalogue rule as other commands: use /dwarf before /day pluto.
+
+A solar day is the average noon-to-noon cycle. Sidereal rotation is a spin
+relative to distant stars. These can differ substantially: Mercury's solar
+day is about 176 Earth days and Venus's is about 117 Earth days. The signed
+spin and orbital periods determine the mean solar cycle. Moon estimates
+use the parent world's year; retrograde rotation is accounted for. The
+values omit eccentric-orbit, seasonal and obliquity effects. They do not
+mean hours of daylight at a particular latitude. Hyperion's chaotic tumble
+has no stable single period. The Sun has no solar day on itself. Spacecraft
+have an orbital period rather than a planetary day.
+
+HISTORICAL MISSION PLAYBACK
+
+Restart the app to load this update. Run it normally, without --plain,
+for animated full-screen mission playback. No downloads are required.
+
+    /mission list
+    /mission Apollo 11 1 minute
+    /mission Apollo 13 30 seconds
+    /mission "Artemis II" 1 minute
+    /mission "SpaceX Demo-2" 1m 30s
+    /mission Polaris Dawn 45 seconds
+
+Quotes around mission names are optional. Names are case-insensitive;
+Artemis 1, Artemis 2, Demo-2 and Crew-1 are accepted aliases. Omitting the
+duration uses one minute. Durations support seconds, minutes and hours,
+including combinations such as 1 minute 30 seconds, 1m30s or 1.5 minutes.
+Choose between 1 second and 24 hours of active playback time.
+
+Starting a mission sets the simulation clock to its historical launch UTC.
+The screen shows a moving spacecraft marker, labeled Earth/Moon/ISS,
+the historical UTC date, current stage, a progress bar and a timeline.
+Compact markers are used; the removed planet globe graphics stay removed.
+Apollo landings also show the command module remaining in lunar orbit.
+Earth-only flights do not show a Moon journey.
+
+Ten included flights:
+    Apollo 11       First crewed landing, surface EVA, ascent and return
+    Apollo 8        Lunar orbit and return, without landing
+    Apollo 13       Accident, aborted landing, lunar flyby and recovery
+    Apollo 17       Final Apollo landing, surface exploration and return
+    Artemis I       Uncrewed Orion flybys and distant retrograde orbit
+    Artemis II      Crewed April 2026 lunar flyby and return; no landing
+    SpaceX Demo-2   Crew Dragon test flight, ISS docking and splashdown
+    SpaceX Crew-1   Operational ISS crew rotation and return
+    Inspiration4    Private Earth-orbit mission, without ISS docking
+    Polaris Dawn    High Earth orbit, spacewalk operations and return
+
+    /pause                    Freeze historical time and the animation
+    /resume                   Continue using the remaining playback time
+    /mission seek 50          Jump to 50 percent of the compressed playback
+    /mission restart          Return to launch with the same duration
+    /mission status           Show current stage and timing (/time also works)
+    /mission info Apollo 11   Read the chronology and mission source links
+    /mission stop             Stop, leaving historical time paused
+    /now                      Return to today's actual time
+
+The prefixed forms /mission pause and /mission resume also work. At the
+requested runtime the spacecraft reaches splashdown and playback pauses
+on the final stage. Pausing adds wall-clock time; seeking and restarting
+change progress. After seeking backward from completion, use /resume.
+Esc stops playback. Navigating to another view/profile or opening the
+mission list/info also stops it and keeps the historical date paused.
+/speed and /step require stopping a replay first. A new /mission NAME
+command replaces the previous replay. /export includes replay metadata.
+Tab completes mission names, including after /mission info.
+
+Timelines use historical launch/return dates and rounded major milestones.
+Some intermediate approach, coast, orbit-change and re-entry cues are
+approximate; /mission info shows their descriptions. All displayed dates
+are UTC, which can differ from the launch/landing site's local date.
+Stage compression varies: long coasts or station stays are compressed more
+strongly so launch, descent and other brief events remain visible. Seeking
+50 percent means halfway through playback, not half the historical duration.
+One-second replays work, but use 30 seconds or longer to read the stages.
+
+Routes, orbital turns, spacecraft positions and body spacing are schematic,
+not reconstructed mission trajectories or flight ephemerides. This is an
+educational animation, without powered-flight dynamics, fuel modeling,
+live tracking or trajectory integration. Mission playback has its own
+clock and does not request historical spacecraft vectors from Horizons.
+The normal planetary orbit view retains its existing position sources.
+
+--plain is a text interface: it shows snapshots rather than an automatic
+animation. Use /mission status after waiting to inspect elapsed progress,
+or /mission seek PERCENT to inspect a stage. -c commands also print text
+snapshots and exit immediately; they do not wait for a replay to finish.
+
+    python3 solar_sim.py --offline -c '/day venus'
+    python3 solar_sim.py --offline -c '/mission Apollo 11 1 minute' -c '/mission seek 47'
