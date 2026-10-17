@@ -167,3 +167,13 @@ is reported in flight. Countdown timing is not telemetry. NASA grouping
 uses provider/mission/program agencies; ESA/Europe also includes European
 Ariane/Vega operators, preserving provider names. Upcoming matches come
 from the next 100 global schedule entries. No synthetic live paths.
+
+BLACK HOLE SCREENSAVER / visual references
+
+NASA: Black Hole's Warped World (turbulent gas, light bending, brightness asymmetry)
+https://www.nasa.gov/universe/nasa-visualization-shows-a-black-holes-warped-world/
+NASA Science: Black Hole Anatomy (accretion flow and turbulent corona)
+https://science.nasa.gov/universe/black-holes/anatomy/
+
+The terminal animation is an artistic procedural gas-volume visualization
+with approximate lensing, not a general-relativistic ray tracer.

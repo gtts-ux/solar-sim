@@ -514,7 +514,7 @@ Open /setting to choose a screensaver and save it for the next start:
     /setting screensaver milky-way     Rotating spiral arms and warm core
     /setting screensaver earth         Shaded Earth, continents and clouds
     /setting screensaver saturn        Banded planet, shadow and tilted rings
-    /setting screensaver black-hole    Dark shadow and swirling luminous disk
+    /setting screensaver black-hole    Dark shadow, turbulent clouds and wisps
 
 Numbers 6-9 in the settings panel select these four choices; 1-5 still
 choose themes. Spaces also work: /setting screensaver black hole.
@@ -532,7 +532,10 @@ Cached geometry keeps rotation smooth; no per-frame random particles are
 used. Earth has stylized geography, polar ice, drifting clouds and a blue
 limb. Saturn's near rings cover the planet while its globe hides the far
 rings; ring gaps and a cast shadow add depth. The black hole has a dark
-center, a bright photon rim, a lensed arc and a rotating accretion pattern.
+center surrounded by thick, turbulent gas with soft, feathered edges.
+Clouds curl at different speeds, with a brighter approaching side, a subtle
+photon rim and a lensed glow. A cached procedural density volume replaces
+the flat-looking disk; time-interpolated cloud shading keeps motion smooth.
 
 256-color terminals get gradients; basic terminals get a simpler palette.
 The new objects retain recognizable natural colors; the sky adapts to the

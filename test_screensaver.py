@@ -223,6 +223,42 @@ class BodySceneTests(unittest.TestCase):
                 self.assertTrue(all(0<=c<=255 for c in palette))
 
 
+class GasCloudTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):cls.scene=BlackHole()
+
+    def test_gas_moves_in_shape_and_has_soft_edges_and_vertical_depth(self):
+        scene=self.scene
+        first=scene.frame(120,40,0)
+        later=scene.frame(120,40,9)
+        moved=sum(a[0]!=b[0] for row,other in zip(first,later) for a,b in zip(row,other))
+        self.assertGreater(moved,100)  # Gas changes coverage, rather than just color.
+        feathered=above_plane=0
+        for y,row in enumerate(first):
+            for x,(glyph,_,_) in enumerate(row):
+                if not 0x2800<ord(glyph)<0x2900:continue
+                if 0<ord(glyph)-0x2800<255:feathered+=1
+                u=(x*2+1-120)/scene.radius;v=(80-y*4-2)/scene.radius
+                if abs(v)>.8 and u*u+v*v>2.7:above_plane+=1
+        self.assertGreater(feathered,100)
+        self.assertGreater(above_plane,100)
+
+    def test_subcell_shadow_blocks_gas_and_stars_at_every_zoom(self):
+        scene=self.scene
+        for zoom in (.7,1.,1.35):
+            frame=scene.frame(80,28,12,zoom)
+            for y,row in enumerate(frame):
+                for x,(glyph,_,_) in enumerate(row):
+                    for dy in range(4):
+                        for dx in range(2):
+                            u=(x*2+dx+.5-80)/scene.radius
+                            v=(56-y*4-dy-.5)/scene.radius
+                            if u*u+v*v>=.96:continue
+                            if glyph==' ':continue
+                            self.assertTrue(0x2800<ord(glyph)<0x2900)
+                            self.assertFalse((ord(glyph)-0x2800)&DOTS[dy][dx])
+
+
 class SaverPreferenceTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)

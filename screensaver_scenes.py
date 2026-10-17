@@ -11,13 +11,15 @@ DOTS = ((1,8),(2,16),(4,32),(64,128))
 _BAYER=((0,8,2,10),(12,4,14,6),(3,11,1,9),(15,7,13,5))
 DITHER=tuple({DOTS[y][x]:(_BAYER[y][x+parity*2]+.5)/16
               for y in range(4) for x in range(2)} for parity in range(2))
+GAS_MASKS=tuple(tuple(sum(bit for bit,threshold in row.items() if threshold<level/16)
+                      for level in range(17)) for row in DITHER)
 GRAY = (235,238,242,245,250,253,255,231)
 PALETTES = {
     'earth': ((17,18,24,25,31,32,39,75), (22,28,29,35,71,77,114,157),
               (237,240,244,248,251,253,255,231), (17,24,31,38,45,81,159,231)),
     'saturn': ((58,94,136,137,179,180,222,230), (58,94,100,101,137,179,186,223),
                (235,237,239,243,246,250,223,230), GRAY),
-    'black-hole': ((52,88,124,160,166,202,208,214), (52,94,130,172,214,220,229,230),
+    'black-hole': ((52,88,94,130,166,172,208,214), (52,94,130,172,214,220,229,230),
                    (17,18,54,55,61,99,141,183), (52,94,178,214,221,229,230,231)),
 }
 BASIC = {'earth':(4,2,7,6),'saturn':(3,3,7,7),'black-hole':(1,3,5,7)}
@@ -82,8 +84,8 @@ class Scene:
             self._geometry_key=key
         return self.samples
 
-    def finish(self,raster,seconds):
-        cells=raster.cells()
+    def finish(self,raster,seconds,cells=None):
+        if cells is None:cells=raster.cells()
         for sx,sy,phase,strength in self.stars[:max(4,min(200,raster.width*raster.height//55))]:
             x=min(raster.width-1,int(sx*raster.width));y=min(raster.height-1,int(sy*raster.height))
             if self.sky_visible(x,y,raster.width,raster.height) and cells[y][x][0]==' ':
@@ -260,28 +262,82 @@ class Saturn(Scene):
 
 
 class BlackHole(Scene):
+    """A softly integrated gas volume with advected, periodic cloud turbulence.
+
+    Curved secondary emission is an artistic lensing approximation, not GR tracing.
+    Only the viewport geometry and density atlas are cached; clouds move with time.
+    """
+    TW,TH=256,128
+
+    def __init__(self):
+        super().__init__()
+        rng=random.Random(8814)
+        # Smooth periodic value noise, rather than isolated random dots each frame.
+        grids=[(nx,ny,weight,[rng.random() for _ in range(nx*ny)])
+               for nx,ny,weight in ((8,4,.24),(16,8,.30),(32,16,.25),(64,32,.15),(128,64,.06))]
+        self.cloud=[]
+        for y in range(self.TH):
+            for x in range(self.TW):
+                value=0.
+                for nx,ny,weight,grid in grids:
+                    gx=x*nx/self.TW;gy=y*ny/self.TH
+                    ix,iy=int(gx),int(gy);fx,fy=gx-ix,gy-iy
+                    fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy)
+                    a=grid[iy*nx+ix];b=grid[iy*nx+(ix+1)%nx]
+                    c=grid[((iy+1)%ny)*nx+ix];d=grid[((iy+1)%ny)*nx+(ix+1)%nx]
+                    value+=weight*((a+(b-a)*fx)*(1-fy)+(c+(d-c)*fx)*fy)
+                self.cloud.append(max(0.,(value-.34)*3.4)**2.4)
+
     def build_geometry(self,width,height,zoom):
-        radius=max(1,min(width*.215,height*.68)*zoom)
+        radius=max(1,min(width*.205,height*.65)*zoom)
         self.radius=radius
         samples=[]
         ca,sa=math.cos(-.12),math.sin(-.12)
-        for index,bit,x,y in self.pixels(width,height,radius,3.9):
-            rho=math.hypot(x,y)
-            if rho<1.:continue  # The shadow also masks stars in sky_visible().
+        inclination=.43;ci=math.sqrt(1-inclination*inclination)
+        # Color is resolved per terminal cell. Cache its exact eight-dot shadow
+        # mask, then integrate the volume once, rather than eight identical colors.
+        for index in range(width*height):
+            col,row=index%width,index//width
+            x=(col*2+1-width)/radius;y=(height*2-row*4-2)/radius
+            mask=0
+            for dy in range(4):
+                for dx in range(2):
+                    px=(col*2+dx+.5-width)/radius
+                    py=(height*2-row*4-dy-.5)/radius
+                    if px*px+py*py>=1:mask|=DOTS[dy][dx]
+            if not mask:continue
+            rho=max(1.,math.hypot(x,y))
             u,v=x*ca+y*sa,-x*sa+y*ca
-            disk_r=math.hypot(u,v/.245)
-            theta=math.atan2(v/.245,u)
-            disk=0.
-            if 1.35<disk_r<3.8:
-                taper=min(1.,(3.8-disk_r)*2)*min(1.,(disk_r-1.35)*5)
-                disk=taper*(.38+.62/(disk_r*.8))*(.83-.22*math.cos(theta))
-            # The far side of the disk bends over the shadow; a weaker image curls below.
-            lens_r=math.hypot(u,v/.96)
-            lens=math.exp(-((lens_r-1.43)/.125)**2)*(.86 if v>0 else .24)
-            photon=math.exp(-((rho-1.055)/.035)**2)*.96
-            halo=math.exp(-((rho-1.17)/.28)**2)*.12
-            if disk+lens+photon+halo<.05:continue
-            samples.append((index,bit,disk,lens,photon,halo,theta,disk_r,rho))
+            layers=[]
+            for depths in ((.3,.9,1.6,2.4,3.3),(-.3,-.9,-1.6,-2.4,-3.3)):
+                column=mean_r=mean_h=mean_s=mean_c=0.
+                for z in depths:
+                    plane=z*ci-v*inclination
+                    r=math.hypot(u,plane)
+                    h=v*ci+z*inclination
+                    # A thick, hot flow: diffuse edges, with no hard outer disk boundary.
+                    density=math.exp(-((r-2.15)/1.15)**2-(h/(.22+.21*r))**2)
+                    density*=min(1.,max(0.,(r-.9)*2))/(.65+r*.45)
+                    angle=math.atan2(plane,u)
+                    column+=density
+                    mean_r+=r*density;mean_h+=h*density
+                    mean_s+=math.sin(angle)*density;mean_c+=math.cos(angle)*density
+                if column<.002:
+                    layers.append((0.,0.,0,0.));continue
+                r=mean_r/column;h=mean_h/column
+                angle=math.atan2(mean_s,mean_c)
+                # Radial winding and differential angular velocity stretch clouds into wisps.
+                tex_u=angle*self.TW/math.tau+r*19+math.sin(angle*2)*7
+                row=int((r*.19+h*.21)*self.TH)%self.TH
+                speed=self.TW/math.tau*.68/(r**1.5+.6)
+                layers.append((column,tex_u,row*self.TW,speed))
+            lens_r=math.hypot(u,v/.98)
+            lens=math.exp(-((lens_r-1.43)/.25)**2)*(.34 if v>0 else .10)
+            photon=math.exp(-((rho-1.045)/.042)**2)*.19
+            haze=math.exp(-((rho-1.65)/.95)**2)*.055
+            boost=1-.33*u/(rho+.1)
+            if sum(layer[0] for layer in layers)*boost+lens+photon+haze<.035:continue
+            samples.append((index,mask,*layers,lens,photon,haze,boost))
         return samples
 
     def sky_visible(self,x,y,width,height):
@@ -289,11 +345,31 @@ class BlackHole(Scene):
 
     def frame(self,width,height,seconds,zoom=1):
         if width<=0 or height<=0:return []
-        raster=Raster(width,height,getattr(self,'monochrome',False))
-        for index,bit,disk,lens,photon,halo,angle,radius,rho in self.geometry(width,height,zoom):
-            swirl=.79+.21*math.sin(12*math.log(max(1.,radius))-angle*3+seconds*.65)
-            arc=.88+.12*math.sin(angle*4-seconds*.47)
-            brightness=min(1.,disk*swirl+lens*arc+photon+halo)
-            family=3 if photon>.30 or brightness>.85 else 1 if lens>.2 or radius<2.35 else 0
-            raster.dot(index,bit,family,brightness)
-        return self.finish(raster,seconds)
+        raster=Raster(width,height)
+        cells=[[(' ',24,False) for _ in range(width)] for _ in range(height)]
+        mono=getattr(self,'monochrome',False)
+        texture=self.cloud;tw=self.TW
+        for index,mask,near,far,lens,photon,haze,boost in self.geometry(width,height,zoom):
+            column=0.;cloud_light=0.
+            for amount,u,row,speed in (near,far):
+                if not amount:continue
+                phase=u+seconds*speed
+                base=math.floor(phase);blend=phase-base
+                a=texture[row+base%tw];b=texture[row+(base+1)%tw]
+                density=a+(b-a)*blend
+                column+=amount*density
+                cloud_light+=density
+            opacity=column/(1.25+column)
+            brightness=min(.99,opacity*boost+lens*(.20+.45*cloud_light)+photon+haze*cloud_light)
+            if brightness<.02:continue
+            family=3 if brightness>.94 else 1 if brightness>.40 else 0
+            # Sparse subcell coverage lets faint gas dissolve into space instead of
+            # drawing a solid contour. This same stable dither supports monochrome.
+            coverage=brightness*(.65,.95,1.15,.90)[family] if mono else brightness/.24
+            if coverage<1:
+                level=max(0,min(16,round(coverage*16)))
+                mask&=GAS_MASKS[(index%width)&1][level]
+            if not mask:continue
+            level=min(7,int(brightness*7.8))
+            cells[index//width][index%width]=(chr(0x2800+mask),family*8+level,level>=6)
+        return self.finish(raster,seconds,cells)
