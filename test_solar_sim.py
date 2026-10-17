@@ -1,5 +1,5 @@
 """Numerical invariants and end-to-end command regression checks."""
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import math
 from pathlib import Path
@@ -327,6 +327,52 @@ class CommandTests(unittest.TestCase):
         self.assertLess(self.sim.date,MAX_DATE)
         self.assertTrue(self.sim.paused)
 
+    def test_time_sets_exact_utc_instant_and_preserves_orbit_view(self):
+        self.sim.command('/orbit jupiter')
+        self.sim.command('/speed 10')
+        self.sim.paused=False
+        result=self.sim.command('/time 1969/12/03 13:45')
+        expected=datetime(1969,12,3,13,45,tzinfo=timezone.utc)
+        self.assertIn('1969-12-03 13:45:00 UTC',result)
+        self.assertEqual(self.sim.date,expected)
+        self.assertEqual(self.sim.clock_mode,'simulation')
+        self.assertTrue(self.sim.paused)
+        self.assertEqual(self.sim.screen,'orbit')
+        self.assertEqual(self.sim.view,'jupiter')
+        self.assertEqual(self.sim.selected,lookup('jupiter'))
+        self.assertEqual(self.sim.speed,10)
+        self.assertEqual(self.sim.position(lookup('earth')),position(lookup('earth'),expected))
+        with patch('engine.time.monotonic',return_value=self.sim.last_tick+60):
+            self.sim.tick()
+            self.assertIn('1969-12-03 13:45:00 UTC',self.sim.command('/time'))
+        self.assertEqual(self.sim.date,expected)
+        self.sim.command('/resume')
+        with patch('engine.time.monotonic',return_value=self.sim.last_tick+1):
+            self.sim.tick()
+        self.assertEqual(self.sim.date,expected+timedelta(days=10))
+
+    def test_time_defaults_to_midnight_and_accepts_leap_days_and_limits(self):
+        self.sim.command('/now')
+        for text,expected in (
+                ('1969/12/03',datetime(1969,12,3,tzinfo=timezone.utc)),
+                ('2000/02/29 23:59',datetime(2000,2,29,23,59,tzinfo=timezone.utc)),
+                ('1800/01/01',MIN_DATE),
+                ('2049/12/31 23:59',MAX_DATE-timedelta(minutes=1))):
+            with self.subTest(text=text):
+                self.assertNotIn('Could not run command',self.sim.command('/time '+text))
+                self.assertEqual(self.sim.date,expected)
+                self.assertTrue(self.sim.paused)
+
+    def test_invalid_time_does_not_replace_clock(self):
+        for text in ('1969/02/29','1969/04/31','1969/13/03','1969/00/03',
+                     '1969/12/03 24:00','1969/12/03 13:60','1969/12/03 13:45:30',
+                     '1799/12/31','2050/01/01','1969/12/03 13:45 extra',
+                     'tomorrow','13:45','1969/12/03 invalid'):
+            with self.subTest(text=text):
+                self.assertIn('Could not run command',self.sim.command('/time '+text))
+                self.assertEqual(self.sim.date,EPOCH)
+                self.assertEqual(self.sim.clock_mode,'simulation')
+
     def test_tick_advances_exactly_at_configured_rate(self):
         self.sim.paused = False
         self.sim.speed = 2
@@ -608,6 +654,29 @@ class FlightReplayTests(unittest.TestCase):
             self.assertTrue(self.sim.paused)
         self.sim.command('/mission resume')
         self.assertEqual(self.sim.screen,'mission')
+        self.assertFalse(self.sim.paused)
+
+    def test_time_exits_mission_only_after_validating_requested_instant(self):
+        self.sim.command('/mission Apollo 11 1 minute')
+        replay=self.sim.mission
+        for command in ('/time 1969/02/29','/time 2050/01/01','/time 1969/12/03 24:00'):
+            self.assertIn('Could not run command',self.sim.command(command))
+            self.assertIs(self.sim.mission,replay)
+            self.assertEqual(self.sim.date,replay.date)
+        self.sim.command('/mission resume')
+        self.assertIn('PLAYING',self.sim.command('/time'))
+        self.assertIs(self.sim.mission,replay)
+        self.sim.overlay='live'
+        result=self.sim.command('/time 1969/12/03 13:45')
+        self.assertIn('1969-12-03 13:45:00 UTC',result)
+        self.assertEqual(self.sim.date,datetime(1969,12,3,13,45,tzinfo=timezone.utc))
+        self.assertIsNone(self.sim.mission)
+        self.assertIsNone(self.sim.overlay)
+        self.assertEqual(self.sim.screen,'dashboard')
+        self.assertEqual(self.sim.clock_mode,'simulation')
+        self.assertTrue(self.sim.paused)
+        self.sim.command('/now')
+        self.assertEqual(self.sim.clock_mode,'realtime')
         self.assertFalse(self.sim.paused)
 
     def test_scenes_render_every_stage_and_keep_missions_distinct(self):

@@ -54,6 +54,8 @@ The installer creates user commands in `~/.local/bin` and adds that directory to
 /compare earth titan
 /dwarf
 /dwarf exit
+/time 1969/12/03
+/time 1969/12/03 13:45
 /mission list
 /mission Apollo 11 1 minute
 /mission Artemis II 30 seconds
@@ -61,6 +63,8 @@ The installer creates user commands in `~/.local/bin` and adds that directory to
 ```
 
 In orbit mode, a body name focuses that body's orbit. `/moons jupiter` opens all included Jupiter moon orbits. Dwarf planets have a separate catalogue.
+
+**Set the clock:** `/time 1969/12/03 13:45` sets the simulation to exactly **1969-12-03 13:45 UTC** and pauses there. Omit the time for midnight. Orbit positions update and orbit mode stays open; setting a date during a mission ends that replay. `/resume` continues at the configured speed, `/now` returns to real time, and `/time` alone shows status. Supported years: 1800–2049.
 
 **Five themes:** `/setting` lists Cosmic, Amber, Ocean, Forest and Mono. Use `/setting theme amber` or `/setting 2` to apply and save one immediately. The starfield follows the theme; Earth and Saturn retain their natural colors. `/setting exit` or Esc closes the panel without stopping a mission.
 

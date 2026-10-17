@@ -128,6 +128,8 @@ COMMAND REFERENCE
     /resume                 Resume at the configured speed
     /step DAYS              Jump by a positive or negative number of days
     /date YYYY-MM-DD        Set simulation date in UTC
+    /time YYYY/MM/DD        Set date at midnight UTC and pause
+    /time YYYY/MM/DD HH:MM  Set exact UTC date/time and pause
     /time                   Current date, speed, view and pause state
     /now                    Follow current real time at 1x
     /reset                  Reset clock, speed, view and display settings
@@ -144,9 +146,13 @@ COMMAND REFERENCE
     /quit                   Exit; /exit also works
 
 ISO date-times also work, e.g. /date 2030-01-01T12:00:00Z.
+Use /time 1969/12/03 for 00:00 UTC, or /time 1969/12/03 13:45 for 13:45 UTC.
+/time with a date pauses at that exact minute and updates the orbit positions.
+It leaves orbit mode open; during a mission it stops the replay first.
+/resume continues at the configured speed. /time alone shows clock status.
 Valid simulation dates are 1800-01-01 through 2049-12-31 UTC.
 At a boundary, time pauses automatically. /speed 0 also holds time.
-The default clock follows the real UTC time at 1x. /speed and /date enter
+The default clock follows the real UTC time at 1x. /speed, /date and /time DATE enter
 simulation time. /now, /realtime or /reset returns to the actual time.
 
 KEYBOARD

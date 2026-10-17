@@ -68,6 +68,7 @@ SIMULATE
   /pause  /resume          Freeze or resume motion
   /step 30                Jump forward 30 days; negative goes backward
   /date 2030-01-01        Set date in UTC (1800 through 2049)
+  /time 1969/12/03 [13:45] Set and pause at this UTC date/time; default midnight
   /time                   Show date and simulation settings
   /now                    Return to current real time, at 1x
   /reset                  Restore date, speed, view and display defaults
@@ -110,7 +111,7 @@ uses the returned position and velocity vectors, with no extrapolation.
 Each body shows its position source. Missing/out-of-window data uses the
 offline fallback below. --offline disables automatic downloads. Cached vectors
 remain usable within their window. Positions are geometric, not apparent sky
-positions as observed from Earth. /speed or /date enters simulation time;
+positions as observed from Earth. /speed, /date or /time DATE enters simulation time;
 /realtime or /now returns to the actual current instant.
 
 OFFLINE PLANET MODEL
@@ -584,6 +585,21 @@ class Simulation:
         if cmd=='back' and self.overlay:
             self.overlay=None
             return self.status()
+        if cmd=='time' and args:
+            usage='Usage: /time YYYY/MM/DD [HH:MM], for example /time 1969/12/03 13:45 (UTC).'
+            if len(args) not in (1,2):
+                raise ValueError(usage)
+            try:
+                date=datetime.strptime(' '.join(args),'%Y/%m/%d %H:%M' if len(args)==2 else '%Y/%m/%d').replace(tzinfo=UTC)
+            except ValueError:
+                raise ValueError('Invalid date or time. '+usage) from None
+            was_mission=self.mission is not None
+            self.set_date(date)
+            self.paused=True
+            self.overlay=None
+            if was_mission:
+                self.screen='dashboard'
+            return 'SIMULATION CLOCK\n\n'+self.status()+'\n\nPaused at the requested instant. /resume continues at the configured speed; /now returns to real time.'
         if cmd not in ('pause','resume','time','export'):
             self.overlay=None
         if cmd in ("mission","missions"):
