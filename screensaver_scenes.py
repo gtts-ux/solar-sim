@@ -1,4 +1,4 @@
-"""Procedural braille Earth, Saturn and black-hole animations; no assets or packages.
+"""Procedural braille planets and black-hole animations; no assets or packages.
 
 The geography is stylized, and the black hole is an artistic lensing illustration.
 Geometry is cached per viewport; animation uses elapsed time, never random frames.
@@ -22,7 +22,24 @@ PALETTES = {
     'black-hole': ((52,88,94,130,166,172,208,214), (52,94,130,172,214,220,229,230),
                    (17,18,54,55,61,99,141,183), (52,94,178,214,221,229,230,231)),
 }
-BASIC = {'earth':(4,2,7,6),'saturn':(3,3,7,7),'black-hole':(1,3,5,7)}
+PALETTES.update({
+    'mercury': ((234,237,240,243,246,249,252,255),(233,236,239,242,245,247,250,253),
+                (237,240,244,248,251,253,255,231),GRAY),
+    'venus': ((58,94,136,137,179,180,223,230),(52,94,130,136,178,179,222,229),
+              (94,136,179,180,222,223,230,231),(52,94,136,179,222,223,230,231)),
+    'mars': ((52,88,94,130,166,172,208,215),(233,235,52,58,94,130,137,179),
+             (237,240,244,248,251,253,255,231),(52,88,94,130,166,172,215,223)),
+    'jupiter': ((58,94,136,179,180,223,229,230),(52,58,94,100,136,137,179,180),
+                (52,88,94,130,166,172,208,215),GRAY),
+    'uranus': ((17,23,30,37,44,80,123,159),(17,24,30,31,37,44,80,123),
+               (24,30,37,80,123,159,195,231),(17,24,30,37,44,80,159,195)),
+    'neptune': ((17,18,19,20,26,27,33,69),(16,17,18,19,20,26,27,33),
+                (17,24,32,39,75,111,153,195),(17,18,24,32,39,75,117,195)),
+})
+
+BASIC = {'earth':(4,2,7,6),'saturn':(3,3,7,7),'black-hole':(1,3,5,7),
+         'mercury':(7,7,7,7),'venus':(3,3,7,3),'mars':(1,3,7,3),
+         'jupiter':(3,3,1,7),'uranus':(6,4,7,6),'neptune':(4,4,6,7)}
 
 
 def scene_palette(name,theme):
@@ -258,6 +275,170 @@ class Saturn(Scene):
                 storm=math.exp(-(delta/.32)**2-((lat-.32)/.10)**2)
                 brightness=min(1.,brightness+storm*.26)
             raster.dot(index,bit,family,brightness)
+        return self.finish(raster,seconds)
+
+
+# Scene timing is accelerated for viewing; these are stylized textures, not maps.
+PLANET_STYLES = {
+    'mercury': (0.03,.10,1.00), 'venus': (177.4,.11,1.00),
+    'mars': (25.2,.12,.99), 'jupiter': (3.1,.18,.94),
+    'uranus': (97.8,.11,.98), 'neptune': (28.3,.16,.98),
+}
+
+
+class Planet(Scene):
+    """A shaded rotating sphere with a stable, procedurally painted texture."""
+    TW,TH=384,192
+
+    def __init__(self,name):
+        super().__init__()
+        if name not in PLANET_STYLES:raise ValueError('Unknown planet screensaver: '+name)
+        self.name=name
+        self.tilt,self.speed,self.flatten=PLANET_STYLES[name]
+        self.material=bytearray(self.TW*self.TH)
+        self.albedo=[]
+        self._paint()
+        if name=='mercury':self._craters()
+
+    def _paint(self):
+        sin,cos=math.sin,math.cos
+        for row in range(self.TH):
+            lat=math.pi*(.5-(row+.5)/self.TH)
+            for col in range(self.TW):
+                lon=(col/self.TW-.5)*math.tau
+                grain=sin(lon*17+sin(lat*11))*sin(lat*23-lon*7)
+                family=0
+                if self.name=='mercury':
+                    shade=.66+.065*grain+.035*sin(lon*7+lat*9)
+                    if sin(lon*3-lat*5)+.4*cos(lon*7+lat*4)>.8:
+                        family=1;shade-=.09
+                elif self.name=='venus':
+                    curl=sin(lon*6+lat*9+sin(lat*5)*1.6)+.38*sin(lon*13-lat*12)
+                    family=2 if curl>.85 else 1 if curl<-.65 else 0
+                    shade=.80+.10*curl+.025*grain
+                elif self.name=='mars':
+                    terrain=sin(lon*2+lat*3)+.65*cos(lon*4-lat*5)+.3*sin(lon*11+lat*7)
+                    family=1 if terrain>.65 else 0
+                    shade=(.60 if family else .82)+.055*grain
+                    if abs(lat)>1.23+.05*sin(lon*5):family=2;shade=.96
+                    # A long equatorial canyon and a small volcanic caldera.
+                    if -1.65<lon<-.25 and abs(lat+.18-.018*sin(lon*8))<.025:
+                        family=1;shade=.43
+                    caldera=math.hypot((lon+1.65)/.085,(lat-.32)/.07)
+                    if caldera<1:shade+=.15*math.exp(-((caldera-.8)/.15)**2)-.13
+                elif self.name=='jupiter':
+                    # Broad cream zones and darker belts, with curled boundaries.
+                    belt=sin(lat*25+.32*sin(lon*7+lat*4)+.12*sin(lon*17-lat*6))
+                    family=1 if belt<-.12 else 0
+                    shade=(.73 if family else .92)+.035*grain+.035*cos(lat*53+lon*9)
+                    dx=((lon-.45+math.pi)%math.tau-math.pi)/.36
+                    dy=(lat+.37)/.14
+                    storm=math.hypot(dx,dy)
+                    if storm<1:
+                        family=2;shade=.79+.12*sin(math.atan2(dy,dx)*2+storm*9)
+                    elif storm<1.16:family=0;shade=.99
+                elif self.name=='uranus':
+                    bands=sin(lat*22+.2*sin(lon*5))
+                    family=1 if bands<-.65 else 0
+                    shade=.86+.035*bands+.025*sin(lon*6+lat*13)
+                    if lat>.95:family=2;shade=.83+.05*cos(lon*4)
+                    cloud=math.exp(-(((lon+.7)/.20)**2+((lat-.25)/.055)**2))
+                    if cloud>.28:family=2;shade=.86+.12*cloud
+                else:  # Neptune: bluer bands, a dark storm and bright cloud streaks.
+                    shade=.84+.065*sin(lat*23+.25*sin(lon*7))+.035*grain
+                    dx=((lon+.48+math.pi)%math.tau-math.pi)/.31
+                    dy=(lat+.30)/.13
+                    storm=dx*dx+dy*dy
+                    if storm<1:family=1;shade=.51+.08*storm
+                    streak=sin(lon*7+lat*10)+.28*sin(lon*15-lat*17)
+                    if (.18<lat<.25 or -.54<lat<-.47) and streak>.35:
+                        family=2;shade=.92
+                self.material[row*self.TW+col]=family
+                self.albedo.append(max(.18,min(1.,shade)))
+
+    def _craters(self):
+        rng=random.Random(192)
+        # Paint local bowls and sunlit rims into the atlas once, not every frame.
+        craters=[(.62,.32,.24)]
+        craters += [(rng.uniform(-math.pi,math.pi),rng.uniform(-1.35,1.35),
+                     .025+.16*rng.random()**2) for _ in range(170)]
+        for lon,lat,size in craters:
+            cx=(lon/math.tau+.5)*self.TW
+            cy=(.5-lat/math.pi)*self.TH
+            ry=max(1.1,size*self.TH/math.pi)
+            rx=max(1.1,ry/max(.32,math.cos(lat)))
+            for y in range(max(0,int(cy-ry*1.2)),min(self.TH,math.ceil(cy+ry*1.2))):
+                dy=(y+.5-cy)/ry
+                for x in range(math.floor(cx-rx*1.2),math.ceil(cx+rx*1.2)):
+                    dx=(x+.5-cx)/rx;r=math.hypot(dx,dy)
+                    if r>1.2:continue
+                    rim=math.exp(-((r-.85)/.14)**2)
+                    bowl=math.exp(-(r/.60)**4)
+                    i=y*self.TW+x%self.TW
+                    shade=self.albedo[i]+rim*(.30-.17*dx)-.30*bowl
+                    self.albedo[i]=max(.18,min(1.,shade))
+
+    def build_geometry(self,width,height,zoom):
+        self.radius=max(1,min(width*.73,height*1.48)*zoom)
+        radius=self.radius;samples=[]
+        ca,sa=math.cos(math.radians(self.tilt)),math.sin(math.radians(self.tilt))
+        atmosphere=self.name!='mercury'
+        top=max(0,math.floor((height*2-radius*1.055)/4))
+        bottom=min(height,math.ceil((height*2+radius*1.055)/4))
+        left=max(0,math.floor((width-radius*1.055)/2))
+        right=min(width,math.ceil((width+radius*1.055)/2))
+        # Shade vertical dot pairs together. All eight silhouette dots remain
+        # exact, with four independent material samples per terminal cell.
+        for row_cell in range(top,bottom):
+            for col_cell in range(left,right):
+                index=row_cell*width+col_cell
+                for dy in (0,2):
+                    for dx in (0,1):
+                        sx=(col_cell*2+dx+.5-width)/radius
+                        sy=(height*2-row_cell*4-dy-1)/radius
+                        mask=glow_mask=0
+                        for offset in (0,1):
+                            py=sy+(.5-offset)/radius
+                            px=sx*ca+py*sa;yp=(-sx*sa+py*ca)/self.flatten
+                            rr=px*px+yp*yp
+                            if rr<=1:mask|=DOTS[dy+offset][dx]
+                            elif atmosphere and rr<1.10:glow_mask|=DOTS[dy+offset][dx]
+                        if not mask and not glow_mask:continue
+                        x=sx*ca+sy*sa;y=(-sx*sa+sy*ca)/self.flatten
+                        rr=x*x+y*y
+                        if not mask:
+                            glow=.30*math.exp(-(math.sqrt(rr)-1)*48)
+                            bits=tuple(DOTS[dy+i][dx] for i in (0,1) if glow_mask&DOTS[dy+i][dx])
+                            samples.append((index,glow_mask,bits,None,0,glow));continue
+                        if rr>=1:
+                            shrink=.9999/math.sqrt(rr);x*=shrink;y*=shrink;rr=x*x+y*y
+                        z=math.sqrt(1-rr)
+                        lat=math.asin(max(-1.,min(1.,y)));lon=math.atan2(x,z)
+                        tex_row=min(self.TH-1,int((.5-lat/math.pi)*self.TH))
+                        nx=x*ca-y*sa;ny=x*sa+y*ca
+                        light=.11+.89*max(0.,-nx*.65+ny*.25+z*.7176)
+                        bits=tuple(DOTS[dy+i][dx] for i in (0,1) if mask&DOTS[dy+i][dx])
+                        samples.append((index,mask,bits,(lon/math.tau+.5)*self.TW,tex_row*self.TW,light))
+        return samples
+
+    def frame(self,width,height,seconds,zoom=1):
+        if width<=0 or height<=0:return []
+        mono=getattr(self,'monochrome',False)
+        raster=Raster(width,height,mono)
+        phase=(seconds*self.speed+.10)*self.TW/math.tau
+        materials,shades=self.material,self.albedo
+        tw=self.TW;draw=raster.dot
+        for index,mask,bits,u,row,light in self.geometry(width,height,zoom):
+            if u is None:
+                family=3;power=light
+            else:
+                col=u+phase;left=math.floor(col);mix=col-left
+                i=row+left%tw;j=row+(left+1)%tw
+                shade=shades[i]+(shades[j]-shades[i])*mix
+                family=materials[i if mix<.5 else j];power=light*shade
+            if mono:
+                for bit in bits:draw(index,bit,family,power)
+            else:draw(index,mask,family,power)
         return self.finish(raster,seconds)
 
 

@@ -10,7 +10,9 @@ THEMES = {
     'forest': ('Forest', (173,114,186,65,150,120,230,71), (1,2,3,2,3,2,7,2)),
     'mono': ('Mono', (250,250,255,244,250,255,255,240), (7,7,7,7,7,7,7,7)),
 }
-SCREENSAVERS = {'milky-way':'Milky Way','earth':'Earth','saturn':'Saturn','black-hole':'Black hole'}
+SCREENSAVERS = {'milky-way':'Milky Way','earth':'Earth','saturn':'Saturn','black-hole':'Black hole',
+                'mercury':'Mercury','venus':'Venus','mars':'Mars',
+                'jupiter':'Jupiter','uranus':'Uranus','neptune':'Neptune'}
 
 COSMIC = (17,18,24,25,32,39,75,117,17,53,54,55,61,99,141,189,
           52,94,130,172,214,221,229,230,235,238,242,245,250,253,255,231)
@@ -57,9 +59,9 @@ class Settings:
 
     def set_screensaver(self,name):
         name='-'.join(name.lower().replace('_',' ').replace('-',' ').split())
-        name={'galaxy':'milky-way','milkyway':'milky-way','blackhole':'black-hole'}.get(name,name)
+        name={'galaxy':'milky-way','milkyway':'milky-way','blackhole':'black-hole','mrs':'mars','urnanus':'uranus'}.get(name,name)
         if name not in SCREENSAVERS:
-            raise ValueError('Choose milky-way, earth, saturn or black-hole. Example: /setting screensaver saturn')
+            raise ValueError('Choose '+', '.join(SCREENSAVERS)+'. Example: /setting screensaver jupiter')
         self._save(self.theme,name)
 
     def text(self):
@@ -69,7 +71,7 @@ class Settings:
         lines += ['', 'SCREENSAVER / '+SCREENSAVERS[self.screensaver], '']
         lines += [('  > ' if key==self.screensaver else '    ')+f'{i}. {label}  /setting screensaver {key}'
                   for i,(key,label) in enumerate(SCREENSAVERS.items(),6)]
-        return '\n'.join(lines)+('\n\nType 1-5 for a theme, 6-9 for a screensaver.\n'
+        return '\n'.join(lines)+('\n\nType 1-5 for a theme, 6-15 for a screensaver.\n'
              'Enter on an empty line previews it; Enter again returns.\n'
              'Preferences save for the next start. --no-color overrides colors.\n'
              'Left/Right: camera or animation zoom. Ctrl+B/F: edit input.\n'

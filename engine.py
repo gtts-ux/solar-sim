@@ -47,7 +47,7 @@ HELP = """EXPLORE
   /weight 70 mars         Weight for a mass in kg, in newtons and Earth kg-equivalent
   /distance earth mars    Approximate center-to-center distance at simulation time
   /random                 Discover a random body
-  /setting                Themes and four animated screensavers; choices save
+  /setting                Themes and ten animated screensavers; choices save
   /camera wide            Camera: system, close, body, high, wide, next, prev
   /live                   Current and upcoming NASA, ESA/European and SpaceX launches
   /live NUMBER            Launch details; /live watch NUMBER opens a webcast
@@ -168,7 +168,8 @@ provide text snapshots, with /mission status or seek to inspect progress.
 THEMES, CAMERAS AND LIVE LAUNCHES
 /setting lists five persistent themes: Cosmic, Amber, Ocean, Forest and Mono.
 /setting theme amber applies one immediately. --no-color overrides colors.
-/setting screensaver earth chooses Milky Way, Earth, Saturn or a black hole.
+/setting screensaver jupiter chooses a planet; all eight planets are included.
+Milky Way and black-hole animations are also available; settings numbers 6-15.
 Enter on an empty line opens it; Enter again returns. Choices save locally.
 Left/Right cycles system/close/body/high/wide cameras around the active target.
 Ctrl+B/F edits input. Local camera scales use kilometers and enlarged markers;
@@ -535,8 +536,11 @@ class Simulation:
             if args and args[0].lower() in ('screensaver','saver'):
                 if len(args)>1:self.settings.set_screensaver(' '.join(args[1:]))
                 else:self.overlay='settings'
-            elif len(args)==1 and args[0] in ('6','7','8','9'):
-                self.settings.set_screensaver(list(SCREENSAVERS)[int(args[0])-6])
+            elif len(args)==1 and args[0].isdigit():
+                setting_number=int(args[0])
+                if 1<=setting_number<=len(THEMES):self.settings.set_theme(list(THEMES)[setting_number-1])
+                elif 6<=setting_number<6+len(SCREENSAVERS):self.settings.set_screensaver(list(SCREENSAVERS)[setting_number-6])
+                else:raise ValueError(f'Choose a settings number from 1 to {5+len(SCREENSAVERS)}.')
             elif args:
                 choice=args[1].lower() if len(args)==2 and args[0].lower()=='theme' else args[0].lower() if len(args)==1 else ''
                 if choice in ('1','2','3','4','5'):choice=list(THEMES)[int(choice)-1]

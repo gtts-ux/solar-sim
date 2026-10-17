@@ -515,9 +515,16 @@ Open /setting to choose a screensaver and save it for the next start:
     /setting screensaver earth         Shaded Earth, continents and clouds
     /setting screensaver saturn        Banded planet, shadow and tilted rings
     /setting screensaver black-hole    Dark shadow, turbulent clouds and wisps
+    /setting screensaver mercury       Gray cratered terrain and bright rims
+    /setting screensaver venus         Creamy golden cloud swirls
+    /setting screensaver mars          Rusty terrain, dark markings, polar ice
+    /setting screensaver jupiter       Cream/brown belts and a red oval storm
+    /setting screensaver uranus        Pale cyan clouds and sideways rotation
+    /setting screensaver neptune       Blue bands, dark storm, bright clouds
 
-Numbers 6-9 in the settings panel select these four choices; 1-5 still
-choose themes. Spaces also work: /setting screensaver black hole.
+Numbers 6-15 in the settings panel select the ten animations; 1-5 still
+choose themes. Existing numbers 6-9 keep their choices; 10-15 select
+Mercury, Venus, Mars, Jupiter, Uranus and Neptune, respectively. Spaces also work: /setting screensaver black hole.
 The default is Milky Way. Existing theme preferences are preserved.
 
 In full-screen mode, press Enter on a blank command line (spaces count as
@@ -545,7 +552,9 @@ The animation fits terminal resizes without interface overlays.
 The simulation clock and any mission replay pause, including while the
 animation initializes. Returning restores the earlier pause/resume state
 without skipping mission stages. These are artistic visualizations:
-Earth's map is simplified and the black hole is not a relativity solver.
+Planet textures and feature placement are stylized. Their visual spin is
+accelerated for viewing, independently of the simulation date and actual
+planetary day lengths. The black hole is not a relativity solver.
 Screensavers are available in the full-screen interface, not --plain or
 one-shot -c output. No packages, images or downloads are needed.
 

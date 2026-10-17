@@ -2,11 +2,12 @@
 from types import SimpleNamespace
 from pathlib import Path
 import tempfile
+import math
 import unittest
 from unittest.mock import Mock, patch
 
 from screensaver import Galaxy, PALETTE, show_screensaver, animation
-from screensaver_scenes import Earth, Saturn, BlackHole, BASIC, DOTS, Raster, scene_palette
+from screensaver_scenes import Earth, Saturn, BlackHole, BASIC, DOTS, Raster, scene_palette, Planet, PLANET_STYLES
 from themes import Settings, SCREENSAVERS, THEMES
 from engine import Simulation
 from solar_sim import completions
@@ -215,7 +216,7 @@ class BodySceneTests(unittest.TestCase):
         frame=self.scenes[2].frame(120,40,8)
         for y in range(17,23):
             for x in range(55,65):self.assertEqual(frame[y][x][0],' ')
-        self.assertEqual(len({scene_palette(n,'cosmic') for n in BASIC}),3)
+        self.assertEqual(len({scene_palette(n,'cosmic') for n in BASIC}),len(BASIC))
         for name in BASIC:
             for theme in THEMES:
                 palette=scene_palette(name,theme)
@@ -258,6 +259,86 @@ class GasCloudTests(unittest.TestCase):
                             self.assertTrue(0x2800<ord(glyph)<0x2900)
                             self.assertFalse((ord(glyph)-0x2800)&DOTS[dy][dx])
 
+class PlanetSceneTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):cls.scenes={name:Planet(name) for name in PLANET_STYLES}
+
+    def test_all_planets_are_registered_without_renumbering_existing_choices(self):
+        self.assertEqual(list(SCREENSAVERS)[:4],['milky-way','earth','saturn','black-hole'])
+        self.assertEqual(len(SCREENSAVERS),10)
+        for name in self.scenes:
+            self.assertIn(name,SCREENSAVERS)
+            self.assertEqual(animation(name).name,name)
+            self.assertIn(name,BASIC)
+
+    def test_frames_fit_resizes_and_rotate_continuously_with_repeatable_textures(self):
+        for name,scene in self.scenes.items():
+            with self.subTest(planet=name):
+                for w,h in ((1,1),(20,8),(64,22),(120,40),(200,60)):
+                    frame=scene.frame(w,h,8)
+                    self.assertEqual((len(frame),len(frame[0])),(h,w))
+                    self.assertTrue(all(0<=color<32 for row in frame for _,color,_ in row))
+                a=scene.frame(100,34,8);b=scene.frame(100,34,8+1/30);c=scene.frame(100,34,15)
+                changed=lambda f:sum(x!=y for row,other in zip(a,f) for x,y in zip(row,other))
+                self.assertGreater(changed(b),0)
+                self.assertLess(changed(b),changed(c))
+                self.assertEqual(a,scene.frame(100,34,8))
+                self.assertNotEqual(a,scene.frame(100,34,8,zoom=.7))
+                self.assertEqual(scene.frame(0,20,1),[])
+                self.assertEqual(scene.frame(20,0,1),[])
+
+    def test_each_planet_has_its_recognizable_surface_or_cloud_features(self):
+        def at(scene,lon,lat):
+            row=int((.5-lat/math.pi)*scene.TH);col=int((lon/math.tau+.5)*scene.TW)%scene.TW
+            return scene.material[row*scene.TW+col]
+        mercury=self.scenes['mercury']
+        self.assertGreater(max(mercury.albedo)-min(mercury.albedo),.5)
+        self.assertIn(2,self.scenes['venus'].material)
+        mars=self.scenes['mars']
+        self.assertEqual(at(mars,0,1.4),2)
+        self.assertEqual(at(mars,0,-1.4),2)
+        self.assertIn(1,mars.material)
+        jupiter=self.scenes['jupiter']
+        self.assertEqual(at(jupiter,.45,-.37),2)
+        belts=[at(jupiter,0,-.9+i*.018) for i in range(100)]
+        self.assertGreater(sum(a!=b for a,b in zip(belts,belts[1:])),8)
+        self.assertTrue(85<self.scenes['uranus'].tilt<110)
+        self.assertEqual(at(self.scenes['neptune'],-.48,-.30),1)
+        self.assertIn(2,self.scenes['neptune'].material)
+
+    def test_color_and_monochrome_runs_reproduce_frames_and_shaded_silhouettes(self):
+        for name,scene in self.scenes.items():
+            for mono in (False,True):
+                scene.monochrome=mono
+                frame=scene.frame(64,22,4)
+                rebuilt=[[(' ',24,False) for _ in range(64)] for _ in range(22)]
+                for y,x,text,color,bold in scene.runs(64,22,4):
+                    self.assertLessEqual(x+len(text),64)
+                    for i,char in enumerate(text):rebuilt[y][x+i]=(char,color,bold)
+                self.assertEqual(frame,rebuilt,(name,mono))
+                text=''.join(c[0] for row in frame for c in row)
+                self.assertTrue(any(0x2800<ord(c)<=0x28ff for c in text))
+                self.assertNotIn('SOLAR',text)
+            scene.monochrome=False
+
+    def test_multidigit_settings_choices_aliases_and_completions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            sim=Simulation(settings_path=root/'settings.json',launch_cache_path=root/'launch.json')
+            sim.command('/mission Apollo 11 1 minute');replay=sim.mission
+            sim.command('/setting')
+            for number,name in enumerate(PLANET_STYLES,10):
+                sim.command(str(number))
+                self.assertEqual(sim.settings.screensaver,name)
+                self.assertEqual(Settings(root/'settings.json').screensaver,name)
+                self.assertIs(sim.mission,replay)
+                self.assertIn('/setting screensaver '+name,completions('/setting screensaver '+name[:3],sim))
+            self.assertIn('1 to 15',sim.command('/setting 16'))
+            self.assertEqual(sim.settings.screensaver,'neptune')
+            for alias,name in (('mrs','mars'),('urnanus','uranus')):
+                sim.command('/setting screensaver '+alias)
+                self.assertEqual(sim.settings.screensaver,name)
+
 
 class SaverPreferenceTests(unittest.TestCase):
     def setUp(self):
@@ -273,6 +354,7 @@ class SaverPreferenceTests(unittest.TestCase):
             settings.set_screensaver(name)
             restored=Settings(self.path)
             self.assertEqual((restored.theme,restored.screensaver),('amber',name))
+        settings.set_screensaver('black-hole')
         settings.set_theme('ocean')
         self.assertEqual(Settings(self.path).screensaver,'black-hole')
         self.assertEqual(Settings(self.path).theme,'ocean')

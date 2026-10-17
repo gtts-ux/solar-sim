@@ -177,3 +177,21 @@ https://science.nasa.gov/universe/black-holes/anatomy/
 
 The terminal animation is an artistic procedural gas-volume visualization
 with approximate lensing, not a general-relativistic ray tracer.
+
+PLANET SCREENSAVERS / visual references
+
+NASA planetary overview and imagery
+https://science.nasa.gov/solar-system/planets/
+Mercury cratered terrain
+https://science.nasa.gov/mercury/facts/
+Venus cloud cover
+https://science.nasa.gov/venus/venus-facts/
+Jupiter belts and the Great Red Spot
+https://science.nasa.gov/jupiter/jupiter-facts/
+Uranus tilt, pale cyan atmosphere and clouds
+https://science.nasa.gov/uranus/facts/
+Uranus and Neptune atmospheric colors
+https://science.nasa.gov/solar-system/why-uranus-and-neptune-are-different-colors/
+
+These are self-contained, hand-painted procedural textures with exaggerated
+contrast and accelerated visual spin, not planetary maps or live weather.

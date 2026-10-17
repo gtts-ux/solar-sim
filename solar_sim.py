@@ -58,7 +58,7 @@ def completions(line, sim=None):
     choices = bodies
     if command in ('/setting','/settings'):
         choices=(list(SCREENSAVERS) if len(line.split())>1 and line.split()[1].lower() in ('screensaver','saver') else
-                 list(THEMES)+['theme','screensaver','exit',*map(str,range(1,10))])
+                 list(THEMES)+['theme','screensaver','exit',*map(str,range(1,6+len(SCREENSAVERS)))])
     elif command=='/camera':
         choices=['system','close','body','high','wide','earth','moon','next','prev']
     elif command=='/live':
