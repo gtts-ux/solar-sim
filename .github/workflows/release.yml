@@ -58,3 +58,7 @@ jobs:
           fi
           gh release upload "$RELEASE_TAG" dist/solar-sim.zip dist/solar-sim.zip.sha256 --clobber
           gh release edit "$RELEASE_TAG" --draft=false --latest
+      - name: Verify automatic update from published assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/smoke_update.py

@@ -2,6 +2,7 @@
 """Build a clean portable source ZIP using only Python's standard library."""
 import argparse
 import hashlib
+import json
 from pathlib import Path
 import stat
 import zipfile
@@ -9,12 +10,12 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 # Explicit manifests prevent cache, credentials, exports or unrelated files leaking into releases.
 FILES = (
-    'START_HERE.txt', 'README.md', 'README.txt', 'GITHUB_SETUP.md', 'SOURCES.txt', 'VERSION.txt',
+    'START_HERE.txt', 'GETTING_STARTED.txt', 'README.md', 'README.txt', 'GITHUB_SETUP.md', 'SOURCES.txt', 'VERSION.txt',
     'Start Solar Sim.command', 'Start Solar Sim.sh', 'Start Solar Sim.bat', 'install_commands.py',
-    'solar_sim.py', 'engine.py', 'navigation.py', 'catalog.py', 'ephemeris.py', 'missions.py',
+    'solar_sim.py', 'updater.py', 'engine.py', 'navigation.py', 'catalog.py', 'ephemeris.py', 'missions.py',
     'day_lengths.py', 'flight_replay.py', 'screensaver.py', 'screensaver_scenes.py', 'themes.py', 'camera.py', 'live_launches.py',
-    'test_solar_sim.py', 'test_screensaver.py', 'test_distribution.py', 'test_controls.py', 'test_commands.py', 'test_navigation.py',
-    '.gitignore', '.gitattributes', 'tools/build_release.py',
+    'test_solar_sim.py', 'test_screensaver.py', 'test_distribution.py', 'test_controls.py', 'test_commands.py', 'test_navigation.py', 'test_updater.py',
+    '.gitignore', '.gitattributes', 'tools/build_release.py', 'tools/smoke_update.py',
     '.github/workflows/checks.yml', '.github/workflows/release.yml',
 )
 
@@ -29,14 +30,17 @@ def build(output_dir):
     output_dir=Path(output_dir)
     output_dir.mkdir(parents=True,exist_ok=True)
     archive=output_dir/'solar-sim.zip'
+    manifest={'format':1,'version':(ROOT/'VERSION.txt').read_text().strip(),
+              'python_min':[3,10],'files':[*files,'RELEASE_MANIFEST.json']}
     with zipfile.ZipFile(archive,'w',compression=zipfile.ZIP_DEFLATED) as package:
-        for name in files:
+        for name in manifest['files']:
             info=zipfile.ZipInfo('solar-sim/'+name, date_time=(2026,1,1,0,0,0))
             info.create_system=3
             mode=0o755 if name.endswith(('.command','.sh')) else 0o644
             info.external_attr=(stat.S_IFREG|mode)<<16
             info.compress_type=zipfile.ZIP_DEFLATED
-            package.writestr(info,(ROOT/name).read_bytes())
+            data=(json.dumps(manifest,indent=2)+'\n').encode() if name=='RELEASE_MANIFEST.json' else (ROOT/name).read_bytes()
+            package.writestr(info,data)
     checksum=archive.with_suffix('.zip.sha256')
     digest=hashlib.sha256(archive.read_bytes()).hexdigest()
     checksum.write_text(f'{digest}  {archive.name}\n',encoding='utf-8')

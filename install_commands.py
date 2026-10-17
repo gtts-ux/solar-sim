@@ -93,6 +93,7 @@ def main(argv=None):
     print('Command folder: '+str(paths[0].parent))
     print('Add the command folder to PATH to use the short names.' if args.no_path else
           'Open a new terminal window, then type solar-sim or sol-sim.')
+    print('Getting started: sol-sim --tutorial   |   Update later: sol-sim -u')
     return 0
 
 

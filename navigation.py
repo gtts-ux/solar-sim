@@ -97,6 +97,7 @@ class Navigation:
                     Item('Screensaver', 'Preview your animation; Enter returns.', screensaver=True),
                     Item('Compare objects...', 'Enter two object names after /compare.', prompt='/compare '),
                     Item('Help', 'Full command and keyboard guide.', ('/help',)),
+                    Item('Getting started', 'Tutorial for sol-sim, controls and updating.', ('/tutorial',)),
                     Item('About the simulation', 'Data sources and model accuracy.', ('/info',)),
                     Item('Export snapshot', 'Save the current simulation to exports/.', ('/export',)),
                     Item('Quit', 'Close the observatory.', ('/quit',)))

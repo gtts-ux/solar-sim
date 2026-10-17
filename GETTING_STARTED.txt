@@ -1,0 +1,102 @@
+GET STARTED WITH SOL-SIM
+=======================
+
+1. OPEN THE APP
+
+   Open a new Terminal window and type:
+
+       sol-sim
+
+   solar-sim is another name for the same command. Commands beginning with
+   sol-sim go in Terminal; commands beginning with / go inside Solar Sim.
+
+   If Terminal says "command not found", install the short commands once:
+     - Install Python 3.10 or newer: https://www.python.org/downloads/
+     - Download solar-sim.zip from https://github.com/gtts-ux/solar-sim/releases/latest
+     - Extract it and keep the whole app folder somewhere permanent.
+     - Open Terminal in that folder (or cd to it), then run:
+
+       python3 install_commands.py
+
+     - Open a NEW terminal window and run sol-sim again.
+   This setup is for macOS/Linux and needs no sudo, Git account or pip packages.
+   If you move the app folder, rerun the installer from its new location.
+   Windows: use Start Solar Sim.bat for the text interface instead.
+
+2. EXPLORE A PLANET
+
+   Inside Solar Sim, type:
+
+       /planet
+       /earth
+       /day earth
+       /compare earth mars
+
+   Tab completes typed commands. /help lists all commands.
+   Arrows on an empty prompt open navigation; Enter chooses, Esc goes back.
+   Ctrl+P/N recalls command history. Left/Right edits a typed command.
+
+3. WATCH THE ORBITS
+
+       /orbit
+       /moons jupiter
+
+   In orbit mode, Left/Right on an empty prompt changes the camera zoom.
+   Up/Down opens navigation. /back returns to the overview.
+
+       /time 1969/12/03 13:45
+
+   This sets the clock to exactly that UTC minute and pauses it.
+   /resume continues; /now returns to real time.
+
+4. PICK A THEME OR SCREENSAVER
+
+       /setting
+
+   Choose Themes or Screensavers with Up/Down, then press Enter.
+   Up/Down selects a choice; Enter applies a theme or saves and previews a
+   screensaver. Enter again returns. F2 closes the settings menu.
+   Space in Settings previews the saved screensaver. Outside menus, Enter
+   on an empty prompt starts it too. Try Jupiter for moons and shadows.
+
+5. REPLAY A MISSION
+
+       /mission list
+       /mission Apollo 11 1 minute
+
+   /pause, /resume and /mission seek 50 control playback.
+   Use /camera wide to change zoom during a replay. /mission stop ends it.
+   /now returns to the current date. /live shows launch status (internet needed).
+
+6. QUIT AND UPDATE
+
+   Inside the app:
+
+       /quit
+
+   Back in Terminal:
+
+       sol-sim -u
+
+   This checks the latest stable GitHub release, downloads its ZIP, verifies
+   the published SHA-256 checksum and tests startup before installing it.
+   Settings, astronomy/launch caches, exports and unrelated files stay in place.
+   Previous app files are saved in update-backups/ inside the app folder.
+   If installation fails, the updater restores the files it replaced.
+   Updating needs internet and write access to the app folder. Close other
+   Solar Sim sessions first, then start the new version with sol-sim.
+   The command updates the app folder used by that terminal command.
+   It never changes Git history; Git checkout users may prefer git pull.
+
+       sol-sim --version        Show the installed version
+       sol-sim --tutorial       Read this guide again
+       sol-sim --help           Show terminal options
+       sol-sim --offline        Start without automatic astronomy downloads
+
+   solar-sim -u and either name with --update work too.
+   Direct Python alternative: python3 solar_sim.py --update
+   Windows alternative: py -3 solar_sim.py --update
+   If an older copy does not recognize -u, download the latest ZIP once.
+   A failed download or invalid package leaves the installed app unchanged.
+
+Read /tutorial inside the app, or GETTING_STARTED.txt in the app folder.

@@ -22,6 +22,19 @@ Optional short commands (macOS/Linux):
    Both names work from any directory. No sudo is needed.
    Keep this folder in place; reinstall the commands if you move it.
 
+Getting started from Terminal:
+   sol-sim                 Open the app
+   sol-sim --tutorial      Read the step-by-step walkthrough
+   sol-sim --version       Show the installed version
+   sol-sim -u              Install the newest stable GitHub release
+
+Quit the app before updating; start it again with sol-sim after the update.
+The updater checks the checksum and startup, preserves settings/caches/
+exports, and backs up previous app files in update-backups/ inside the app.
+Internet and write access to the app folder are required. --update also works.
+Without short commands: python3 solar_sim.py --update (Windows: py -3 ...).
+See GETTING_STARTED.txt, or /tutorial inside the app, for the full tutorial.
+
 Try:
    /planet
    /orbit
@@ -35,6 +48,8 @@ Try:
 Use /help for commands and /quit to exit.
 In full-screen mode, Enter on empty input opens your selected screensaver.
 Press Enter again to return to your previous view.
-Left/Right changes camera, including during missions. Ctrl+B/F edits input.
+Arrows browse on empty input. /setting opens themes and screensavers directly.
+Left/Right changes camera only in orbit view; Ctrl+P/N recalls command history.
+Use /camera directly during missions. Left/Right or Ctrl+B/F edits typed input.
 Use /camera system to restore automatic framing.
 Read README.md for setup and README.txt for the full command guide.

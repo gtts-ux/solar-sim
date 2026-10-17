@@ -1,5 +1,6 @@
 """Verify the actual downloadable package works after extraction."""
 import hashlib
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -20,6 +21,9 @@ class DistributionTests(unittest.TestCase):
             with zipfile.ZipFile(archive) as package:
                 self.assertIsNone(package.testzip())
                 self.assertTrue({'solar-sim/'+f for f in FILES}<=set(package.namelist()))
+                manifest=json.loads(package.read('solar-sim/RELEASE_MANIFEST.json'))
+                self.assertEqual(set(manifest['files']),{n.removeprefix('solar-sim/') for n in package.namelist()})
+                self.assertEqual(manifest['version'],(Path(__file__).parent/'VERSION.txt').read_text().strip())
                 self.assertTrue(all(n.startswith('solar-sim/') and '..' not in Path(n).parts for n in package.namelist()))
                 for name in package.namelist():
                     self.assertFalse(any(part in ('.git','__pycache__','exports','.DS_Store','ephemeris_cache.json') for part in Path(name).parts))

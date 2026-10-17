@@ -50,6 +50,24 @@ want the commands to open. Use --no-path to manage PATH yourself, or
 --bin-dir /your/command/folder to choose another command directory.
 Windows users can use the existing Start Solar Sim.bat launcher.
 
+GETTING STARTED / UPDATING
+
+    sol-sim --tutorial      Step-by-step setup and first commands
+    sol-sim --version       Show the installed version
+    sol-sim -u              Download and install the newest stable release
+
+Read GETTING_STARTED.txt, or /tutorial inside the app, for the walkthrough.
+Quit the app before updating, run sol-sim -u in Terminal, then start sol-sim.
+solar-sim -u and --update work too. Direct Python: python3 solar_sim.py --update.
+Windows: py -3 solar_sim.py --update. Internet and a writable app folder are needed.
+
+Updates verify the published SHA-256 checksum and check the new app starts
+before changing files. Settings, caches, exports, unrelated files and Git
+metadata stay in place. Previous app files are saved in update-backups/;
+failed installation restores replaced files. The command updates the folder
+it launches. Git checkout users may prefer git pull; -u does not change Git
+history. If -u is not recognized in an older copy, download the latest ZIP once.
+
 FIRST THINGS TO TRY
 
     /planet
@@ -140,6 +158,7 @@ COMMAND REFERENCE
     /export                 JSON snapshot in exports/ beside these files
 
     /info                   Model and data accuracy notes
+    /tutorial               Getting started with sol-sim, controls and updates
     /menu                   Open full-screen arrow navigation (Tab empty or F2)
     /sources                Astronomy source links
     /help                   Command reference and keyboard shortcuts

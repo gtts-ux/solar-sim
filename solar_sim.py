@@ -3,6 +3,7 @@
 import argparse
 import locale
 import os
+from pathlib import Path
 import sys
 import textwrap
 
@@ -20,6 +21,7 @@ WELCOME = f"""WELCOME TO YOUR OBSERVATORY
 One star. Eight planets. /dwarf opens five more worlds in a separate mode.
 
 Type /planet to begin, /earth for a detailed profile, or /help for all commands.
+New here? /tutorial walks through starting, exploring and updating with sol-sim.
 Explore the giants with /moons jupiter and /view saturn.
 
 The clock follows the actual current UTC time. /orbit opens full-screen orbits.
@@ -566,7 +568,20 @@ def main():
     parser.add_argument("--no-color",action="store_true",help="Disable terminal colors")
     parser.add_argument("--offline",action="store_true",help="Disable automatic JPL downloads; use cached or approximate positions")
     parser.add_argument("-c","--command",action="append",help="Execute a slash command and exit; may be repeated")
+    modes=parser.add_mutually_exclusive_group()
+    modes.add_argument('-u','--update',action='store_true',help='Download and install the latest stable GitHub release, then exit')
+    modes.add_argument('--tutorial',action='store_true',help='Print the getting-started tutorial and exit')
+    root=Path(__file__).resolve().parent
+    parser.add_argument('--version',action='version',version='Solar Sim '+(root/'VERSION.txt').read_text().strip())
     args = parser.parse_args()
+    if args.update or args.tutorial:
+        if args.command:parser.error('Use --update or --tutorial without -c commands.')
+        if args.update:
+            if args.offline:parser.error('Updating needs internet; omit --offline.')
+            from updater import update_cli
+            return update_cli(root)
+        print((root/'GETTING_STARTED.txt').read_text(encoding='utf-8'))
+        return 0
     sim = Simulation(online=not args.offline and not args.command)
     if args.command:
         sim.paused = True

@@ -32,6 +32,10 @@ class TerminalCommandTests(unittest.TestCase):
             self.assertEqual(result.returncode,0,result.stderr)
             self.assertIn('/neptune',result.stdout)
             self.assertIn('24.00 hours',result.stdout)
+            for flag,expected in (('--tutorial','GET STARTED WITH SOL-SIM'),('--version','Solar Sim ')):
+                extra=subprocess.run([str(self.bin/name),flag],cwd=self.root,text=True,capture_output=True,timeout=15)
+                self.assertEqual(extra.returncode,0,extra.stderr)
+                self.assertIn(expected,extra.stdout)
         # Source the generated PATH block in a real POSIX shell, twice.
         result=subprocess.run(['sh','-c','. "$1"; . "$1"; command -v solar-sim; command -v sol-sim',
                                'check',str(self.profiles[0])],cwd=self.root,text=True,capture_output=True,timeout=10)

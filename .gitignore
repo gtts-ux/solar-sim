@@ -12,6 +12,10 @@ launch_cache.json.*.tmp
 settings.json
 settings.json.*.tmp
 exports/
+update-backups/
+.solar-sim-update.lock
+.solar-sim-stage-*/
+RELEASE_MANIFEST.json
 
 # Generated downloads
 dist/

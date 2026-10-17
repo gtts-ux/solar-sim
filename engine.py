@@ -78,6 +78,7 @@ SIMULATE
   /export                 Save a JSON snapshot in this folder's exports directory
 
 APP
+  /tutorial               Getting started with sol-sim, controls and updating
   /menu                   Arrow navigation (full-screen); Tab empty or F2 also opens it
   /info                   Model, accuracy and data notes
   /sources                Astronomy reference links
@@ -363,7 +364,7 @@ COMMANDS = ["mission", "missions", "day", "satellites", "satellite", "dwarf", "m
             "now", "reset", "scale", "labels", "trails", "export", "info", "sources", "help", "clear", "quit", "exit"]
 
 
-COMMANDS = ['menu','setting','settings','camera','live'] + COMMANDS
+COMMANDS = ['tutorial','menu','setting','settings','camera','live'] + COMMANDS
 
 
 class Simulation:
@@ -700,7 +701,7 @@ class Simulation:
         if lookup(" ".join(parts)):
             body = self.body(" ".join(parts))
             return self.open_body(body)
-        if cmd in ("satellites","planet","planets","moon","moons","search","compare","distance","weight","random","info","help","sources","sync"):
+        if cmd in ("satellites","planet","planets","moon","moons","search","compare","distance","weight","random","info","help","tutorial","sources","sync"):
             if not (self.screen == "orbit" and cmd in ("planet","planets","moon","moons","satellites") and args):
                 self.screen = "dashboard"
                 self.orbit_focus = None
@@ -710,6 +711,8 @@ class Simulation:
             return "Observatory closed. Clear skies!"
         if cmd == "help":
             return HELP
+        if cmd == 'tutorial':
+            return (ROOT/'GETTING_STARTED.txt').read_text(encoding='utf-8')
         if cmd == "info":
             return INFO
         if cmd == "sources":

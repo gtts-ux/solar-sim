@@ -42,6 +42,20 @@ Open a **new terminal window**, then type either `solar-sim` or `sol-sim` from a
 
 The installer creates user commands in `~/.local/bin` and adds that directory to zsh, bash or sh startup files. It needs no administrator access or extra packages. Existing shell settings are preserved. Keep the app folder in place; rerun the installer from its new location after moving it. `--bin-dir PATH --no-path` lets you manage the command directory and PATH yourself. Windows retains the `.bat` launcher.
 
+## Tutorial and updates
+
+Run `sol-sim --tutorial` for the walkthrough, read [GETTING_STARTED.txt](GETTING_STARTED.txt), or use `/tutorial` inside the app. It covers setup, planets, orbits, themes, screensavers and missions. `sol-sim --version` shows your installed version.
+
+Quit the app, then update from Terminal:
+
+```sh
+sol-sim -u
+```
+
+`solar-sim -u` and `--update` work too. The updater downloads the newest stable release ZIP from this repository, verifies its published SHA-256 checksum and checks startup before installing. It preserves settings, caches, exports, unrelated files and Git metadata. Previous app files are backed up in `update-backups/`; an installation failure restores replaced files. Start the new version with `sol-sim`. No account, Git installation, pip packages or administrator access is needed; internet and write access to the app folder are required.
+
+The update applies to the folder your command launches. Git checkout users can use `git pull` instead; the ZIP updater changes app files without committing or changing Git history. Direct Python alternative: `python3 solar_sim.py --update` (Windows: `py -3 solar_sim.py --update`). Copies older than v1.6.0 need the latest ZIP once to gain this command. A version already current is left unchanged.
+
 ## Try it
 
 ```text
