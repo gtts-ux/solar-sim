@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from screensaver import Galaxy, PALETTE, show_screensaver, animation
-from screensaver_scenes import Earth, Saturn, BlackHole, BASIC, DOTS, Raster, scene_palette, Planet, PLANET_STYLES
+from screensaver_scenes import Earth, Saturn, BlackHole, BASIC, DOTS, Raster, scene_palette, Planet, PLANET_STYLES, JupiterMoons
 from themes import Settings, SCREENSAVERS, THEMES
 from engine import Simulation
 from solar_sim import completions
@@ -338,6 +338,79 @@ class PlanetSceneTests(unittest.TestCase):
             for alias,name in (('mrs','mars'),('urnanus','uranus')):
                 sim.command('/setting screensaver '+alias)
                 self.assertEqual(sim.settings.screensaver,name)
+
+
+class JupiterTransitTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):cls.scene=Planet('jupiter')
+
+    def test_shadow_follows_sun_ray_with_soft_edge_and_rejects_moons_behind_surface(self):
+        moons=JupiterMoons()
+        point=(0.,0.,1.)
+        lx,ly,lz=moons.light
+        perpendicular=math.hypot(lx,ly)
+        def moon(offset=0,along=.8):
+            return ('Test',lx*along+ly/perpendicular*offset,
+                    ly*along-lx/perpendicular*offset,1+lz*along,.12,0,1.)
+        self.assertEqual(moons.shadow(point,moon()),1)
+        self.assertEqual(moons.shadow(point,moon(.3)),0)
+        self.assertEqual(moons.shadow(point,moon(along=-.8)),0)
+        edge=[moons.shadow(point,moon(offset)) for offset in (.10,.12,.14)]
+        self.assertTrue(1>edge[0]>edge[1]>edge[2]>0)
+
+    def test_front_moon_casts_dark_dot_precise_shadow_and_back_moon_is_hidden(self):
+        scene=self.scene;scene.monochrome=False
+        w,h=100,34
+        with patch.object(scene.moons,'draw'):
+            baseline=scene.frame(w,h,0)
+        lx,ly,lz=scene.moons.light
+        front=('Test',lx*.8,ly*.8,1+lz*.8,.14,0,.95)
+        with patch.object(scene.moons,'positions',return_value=[front]):
+            transit=scene.frame(w,h,0)
+        removed=0
+        for (index,bit),(x,y,z) in scene.moons.surface.items():
+            if x*x+y*y>.04**2:continue
+            before=baseline[index//w][index%w][0]
+            after=transit[index//w][index%w][0]
+            if 0x2800<ord(before)<=0x28ff and (ord(before)-0x2800)&bit:
+                self.assertFalse(after!=' ' and (ord(after)-0x2800)&bit)
+                removed+=1
+        self.assertGreater(removed,4)
+        behind=('Test',0.,0.,-2.,.14,0,.95)
+        with patch.object(scene.moons,'positions',return_value=[behind]):
+            hidden=scene.frame(w,h,0)
+        self.assertEqual(baseline,hidden)
+
+    def test_all_four_moons_move_continuously_and_dark_silhouettes_block_stars(self):
+        scene=self.scene
+        initial=scene.moons.positions(0,scene.tilt)
+        self.assertEqual([m[0] for m in initial],['Io','Europa','Ganymede','Callisto'])
+        nearby=scene.moons.positions(1/30,scene.tilt)
+        later=scene.moons.positions(1,scene.tilt)
+        for a,b,c in zip(initial,nearby,later):
+            distance=lambda v:math.dist(a[1:4],v[1:4])
+            self.assertTrue(0<distance(b)<distance(c))
+        for mono in (False,True):
+            scene.monochrome=mono
+            frame=scene.frame(100,34,0)
+            self.assertTrue(scene.moons.blocked_cells)
+            for index in scene.moons.blocked_cells:
+                x,y=index%100,index//100
+                self.assertFalse(scene.sky_visible(x,y,100,34))
+                self.assertNotIn(frame[y][x][0],('+','*','·'))
+        scene.monochrome=False
+
+    def test_transits_fit_all_zooms_and_resizes_in_color_and_monochrome(self):
+        scene=self.scene
+        for mono in (False,True):
+            scene.monochrome=mono
+            for w,h in ((1,1),(20,8),(64,22),(120,40)):
+                for zoom in (.7,.9,1.,1.12,1.35):
+                    frame=scene.frame(w,h,6,zoom)
+                    self.assertEqual(len(frame),h)
+                    self.assertTrue(all(len(row)==w for row in frame))
+                    self.assertTrue(all(0<=color<32 for row in frame for _,color,_ in row))
+        scene.monochrome=False
 
 
 class SaverPreferenceTests(unittest.TestCase):

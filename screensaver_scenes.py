@@ -72,6 +72,17 @@ class Raster:
         self.samples[index]+=1
         self.families[family][index]+=light
 
+    def erase(self,index,mask):
+        """Remove covered subpixels while retaining the remaining cell's shade."""
+        previous=self.masks[index]
+        remaining=previous & ~mask
+        if remaining==previous:return
+        fraction=remaining.bit_count()/previous.bit_count()
+        self.masks[index]=remaining
+        self.power[index]*=fraction
+        self.samples[index]*=fraction
+        for family in self.families:family[index]*=fraction
+
     def cells(self):
         cells=[[(' ',24,False) for _ in range(self.width)] for _ in range(self.height)]
         f0,f1,f2,f3=self.families
@@ -286,6 +297,106 @@ PLANET_STYLES = {
 }
 
 
+class JupiterMoons:
+    """Artistic Galilean transits, with geometric sunlight occlusion.
+
+    Sizes, orbit radii and periods are scaled for a readable screensaver;
+    these are not current moon positions. Coordinates use Jupiter radii.
+    """
+    # name, compressed orbit, enlarged radius, seconds/orbit, phase, material, albedo
+    ORBITS=(('Io',1.50,.105,24.,-.40,0,.95),
+            ('Europa',1.85,.090,38.,1.20,0,.98),
+            ('Ganymede',2.25,.140,62.,-1.25,3,.78),
+            ('Callisto',2.65,.130,98.,3.50,3,.56))
+    LIGHT=(-.65,.25,.7176)
+
+    def __init__(self):
+        length=math.sqrt(sum(v*v for v in self.LIGHT))
+        self.light=tuple(v/length for v in self.LIGHT)
+        self.key=None
+        self.surface={}
+        self.blocked_cells=set()
+
+    def positions(self,seconds,tilt):
+        ca,sa=math.cos(math.radians(tilt)),math.sin(math.radians(tilt))
+        result=[]
+        for name,orbit,radius,period,phase,family,albedo in self.ORBITS:
+            angle=phase+seconds*math.tau/period
+            x=orbit*math.sin(angle);y=orbit*.13*math.cos(angle)
+            z=orbit*math.sqrt(1-.13**2)*math.cos(angle)
+            result.append((name,x*ca-y*sa,x*sa+y*ca,z,radius,family,albedo))
+        return result
+
+    def geometry(self,scene,width,height):
+        key=(scene._geometry_key,scene.radius)
+        if key==self.key:return
+        self.key=key;self.surface={}
+        ca,sa=math.cos(math.radians(scene.tilt)),math.sin(math.radians(scene.tilt))
+        for index,bit,x,y in Scene.pixels(width,height,scene.radius,1.06):
+            u=x*ca+y*sa;v=(-x*sa+y*ca)/scene.flatten
+            rr=u*u+v*v
+            if rr<=1:self.surface[(index,bit)]=(x,y,math.sqrt(1-rr))
+
+    @staticmethod
+    def region(width,height,scale,left,right,bottom,top):
+        """Only visit subpixels in a projected moon/shadow bounding rectangle."""
+        for py in range(max(0,math.floor(height*2-top*scale)),min(height*4,math.ceil(height*2-bottom*scale))):
+            y=(height*2-py-.5)/scale
+            for px in range(max(0,math.floor(width+left*scale)),min(width*2,math.ceil(width+right*scale))):
+                x=(px+.5-width)/scale
+                yield (py//4)*width+px//2,DOTS[py%4][px%2],x,y
+
+    def shadow(self,point,moon):
+        """Fraction of direct light blocked along the surface-to-Sun ray."""
+        _,mx,my,mz,radius,_,_=moon
+        dx,dy,dz=mx-point[0],my-point[1],mz-point[2]
+        along=dx*self.light[0]+dy*self.light[1]+dz*self.light[2]
+        if along<=0:return 0.
+        distance2=max(0.,dx*dx+dy*dy+dz*dz-along*along)
+        inner,outer=radius*.78,radius*1.24
+        if distance2>=outer*outer:return 0.
+        if distance2<=inner*inner:return 1.
+        t=(outer-math.sqrt(distance2))/(outer-inner)
+        return t*t*(3-2*t)
+
+    def draw(self,raster,scene,seconds):
+        width,height=raster.width,raster.height;scale=scene.radius
+        self.geometry(scene,width,height)
+        moons=self.positions(seconds,scene.tilt)
+        self.blocked_cells=set()
+        lx,ly,lz=self.light
+        for moon in moons:
+            _,mx,my,mz,radius,_,_=moon
+            if mz<=0:continue
+            # A visible cloud point has 0 <= z <= 1. Project that whole
+            # interval so shadows also enter smoothly at the curved limb.
+            xs=(mx-mz*lx/lz,mx-(mz-1)*lx/lz)
+            ys=(my-mz*ly/lz,my-(mz-1)*ly/lz)
+            margin=radius*1.3/lz
+            for index,bit,_,_ in self.region(width,height,scale,min(xs)-margin,max(xs)+margin,min(ys)-margin,max(ys)+margin):
+                point=self.surface.get((index,bit))
+                if point is None:continue
+                # The planet's night side receives no direct sunlight.
+                if point[0]*lx+point[1]*ly+point[2]*lz<=0:continue
+                coverage=self.shadow(point,moon)
+                if coverage>DITHER[(index%width)&1][bit]:raster.erase(index,bit)
+        for moon in sorted(moons,key=lambda m:m[3]):
+            name,mx,my,mz,radius,family,albedo=moon
+            for index,bit,x,y in self.region(width,height,scale,mx-radius,mx+radius,my-radius,my+radius):
+                nx,ny=(x-mx)/radius,(y-my)/radius
+                rr=nx*nx+ny*ny
+                if rr>1:continue
+                nz=math.sqrt(1-rr)
+                surface=self.surface.get((index,bit))
+                if surface is not None and mz+nz*radius<=surface[2]:continue
+                self.blocked_cells.add(index)
+                light=.08+.92*max(0.,nx*lx+ny*ly+nz*lz)
+                mottling=.91+.09*math.sin(nx*9+ny*13+seconds*.18)
+                if name=='Europa':mottling=1.-.15*max(0.,math.sin(nx*18+ny*11))**8
+                raster.erase(index,bit)
+                raster.dot(index,bit,family,light*albedo*mottling)
+
+
 class Planet(Scene):
     """A shaded rotating sphere with a stable, procedurally painted texture."""
     TW,TH=384,192
@@ -297,6 +408,7 @@ class Planet(Scene):
         self.tilt,self.speed,self.flatten=PLANET_STYLES[name]
         self.material=bytearray(self.TW*self.TH)
         self.albedo=[]
+        self.moons=JupiterMoons() if name=='jupiter' else None
         self._paint()
         if name=='mercury':self._craters()
 
@@ -379,7 +491,7 @@ class Planet(Scene):
                     self.albedo[i]=max(.18,min(1.,shade))
 
     def build_geometry(self,width,height,zoom):
-        self.radius=max(1,min(width*.73,height*1.48)*zoom)
+        self.radius=max(1,min(width*.62,height*1.30)*zoom) if self.moons else max(1,min(width*.73,height*1.48)*zoom)
         radius=self.radius;samples=[]
         ca,sa=math.cos(math.radians(self.tilt)),math.sin(math.radians(self.tilt))
         atmosphere=self.name!='mercury'
@@ -439,7 +551,11 @@ class Planet(Scene):
             if mono:
                 for bit in bits:draw(index,bit,family,power)
             else:draw(index,mask,family,power)
+        if self.moons:self.moons.draw(raster,self,seconds)
         return self.finish(raster,seconds)
+
+    def sky_visible(self,x,y,width,height):
+        return super().sky_visible(x,y,width,height) and (not self.moons or y*width+x not in self.moons.blocked_cells)
 
 
 class BlackHole(Scene):
