@@ -10,6 +10,8 @@ THEMES = {
     'forest': ('Forest', (173,114,186,65,150,120,230,71), (1,2,3,2,3,2,7,2)),
     'mono': ('Mono', (250,250,255,244,250,255,255,240), (7,7,7,7,7,7,7,7)),
 }
+SCREENSAVERS = {'milky-way':'Milky Way','earth':'Earth','saturn':'Saturn','black-hole':'Black hole'}
+
 COSMIC = (17,18,24,25,32,39,75,117,17,53,54,55,61,99,141,189,
           52,94,130,172,214,221,229,230,235,238,242,245,250,253,255,231)
 
@@ -29,30 +31,46 @@ class Settings:
     def __init__(self,path):
         self.path=Path(path)
         self.theme='cosmic'
+        self.screensaver='milky-way'
         try:
             value=json.loads(self.path.read_text(encoding='utf-8'))
-            if isinstance(value,dict) and value.get('theme') in THEMES:
-                self.theme=value['theme']
+            if isinstance(value,dict):
+                if isinstance(value.get('theme'),str) and value['theme'] in THEMES:self.theme=value['theme']
+                if isinstance(value.get('screensaver'),str) and value['screensaver'] in SCREENSAVERS:self.screensaver=value['screensaver']
         except (OSError,ValueError,TypeError):
             pass
+
+    def _save(self,theme,screensaver):
+        temporary=self.path.with_name(self.path.name+f'.{os.getpid()}.tmp')
+        try:
+            temporary.write_text(json.dumps({'version':2,'theme':theme,'screensaver':screensaver},indent=2)+'\n',encoding='utf-8')
+            temporary.replace(self.path)
+        finally:
+            temporary.unlink(missing_ok=True)
+        self.theme,self.screensaver=theme,screensaver
 
     def set_theme(self,name):
         name=name.lower()
         if name not in THEMES:
             raise ValueError('Choose cosmic, amber, ocean, forest or mono.')
-        temporary=self.path.with_name(self.path.name+f'.{os.getpid()}.tmp')
-        try:
-            temporary.write_text(json.dumps({'version':1,'theme':name},indent=2)+'\n',encoding='utf-8')
-            temporary.replace(self.path)
-        finally:
-            temporary.unlink(missing_ok=True)
-        self.theme=name
+        self._save(name,self.screensaver)
+
+    def set_screensaver(self,name):
+        name='-'.join(name.lower().replace('_',' ').replace('-',' ').split())
+        name={'galaxy':'milky-way','milkyway':'milky-way','blackhole':'black-hole'}.get(name,name)
+        if name not in SCREENSAVERS:
+            raise ValueError('Choose milky-way, earth, saturn or black-hole. Example: /setting screensaver saturn')
+        self._save(self.theme,name)
 
     def text(self):
         lines=['SETTINGS / FIVE THEMES','']
         lines += [('  > ' if key==self.theme else '    ')+f'{i}. {value[0]}  /setting theme {key}'
                   for i,(key,value) in enumerate(THEMES.items(),1)]
-        return '\n'.join(lines)+('\n\nType 1-5 here, or use /setting theme amber or /setting 2.\n'
-             'Saved on this computer for the next start. --no-color overrides colors.\n'
-             'Left/Right: camera. Ctrl+B/F: edit input. /camera system: original view.\n'
+        lines += ['', 'SCREENSAVER / '+SCREENSAVERS[self.screensaver], '']
+        lines += [('  > ' if key==self.screensaver else '    ')+f'{i}. {label}  /setting screensaver {key}'
+                  for i,(key,label) in enumerate(SCREENSAVERS.items(),6)]
+        return '\n'.join(lines)+('\n\nType 1-5 for a theme, 6-9 for a screensaver.\n'
+             'Enter on an empty line previews it; Enter again returns.\n'
+             'Preferences save for the next start. --no-color overrides colors.\n'
+             'Left/Right: camera or animation zoom. Ctrl+B/F: edit input.\n'
              '/setting exit or Esc returns without stopping a mission.')

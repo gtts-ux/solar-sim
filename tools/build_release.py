@@ -12,7 +12,7 @@ FILES = (
     'START_HERE.txt', 'README.md', 'README.txt', 'GITHUB_SETUP.md', 'SOURCES.txt', 'VERSION.txt',
     'Start Solar Sim.command', 'Start Solar Sim.sh', 'Start Solar Sim.bat',
     'solar_sim.py', 'engine.py', 'catalog.py', 'ephemeris.py', 'missions.py',
-    'day_lengths.py', 'flight_replay.py', 'screensaver.py', 'themes.py', 'camera.py', 'live_launches.py',
+    'day_lengths.py', 'flight_replay.py', 'screensaver.py', 'screensaver_scenes.py', 'themes.py', 'camera.py', 'live_launches.py',
     'test_solar_sim.py', 'test_screensaver.py', 'test_distribution.py', 'test_controls.py',
     '.gitignore', '.gitattributes', 'tools/build_release.py',
     '.github/workflows/checks.yml', '.github/workflows/release.yml',

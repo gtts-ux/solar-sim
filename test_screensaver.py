@@ -1,9 +1,15 @@
 """Galaxy rendering and safe return from full-screen animation."""
 from types import SimpleNamespace
+from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from screensaver import Galaxy, PALETTE, show_screensaver
+from screensaver import Galaxy, PALETTE, show_screensaver, animation
+from screensaver_scenes import Earth, Saturn, BlackHole, BASIC, DOTS, Raster, scene_palette
+from themes import Settings, SCREENSAVERS, THEMES
+from engine import Simulation
+from solar_sim import completions
 
 
 class GalaxyTests(unittest.TestCase):
@@ -49,7 +55,7 @@ class GalaxyTests(unittest.TestCase):
 
 
 class ScreensaverStateTests(unittest.TestCase):
-    def run_saver(self,keys,paused=False,colors=False,color_count=256,draw_error=None):
+    def run_saver(self,keys,paused=False,colors=False,color_count=256,draw_error=None,saver='milky-way'):
         error=type('CursesError',(Exception,),{})
         curses=SimpleNamespace(error=error,COLORS=color_count,COLOR_PAIRS=256,
                                COLOR_BLACK=0,KEY_ENTER=343,A_BOLD=1,A_DIM=2,
@@ -61,7 +67,8 @@ class ScreensaverStateTests(unittest.TestCase):
         if draw_error:
             screen.addstr.side_effect=draw_error
         sim=SimpleNamespace(paused=paused,running=True,last_tick=0,tick=Mock(),
-                            screen='mission',mission=object(),selected=object())
+                            screen='mission',mission=object(),selected=object(),
+                            settings=SimpleNamespace(theme='cosmic',screensaver=saver))
         key_iterator=iter(keys)
         def next_key():
             self.assertTrue(sim.paused)
@@ -69,13 +76,14 @@ class ScreensaverStateTests(unittest.TestCase):
         screen.get_wch.side_effect=next_key
         original=(sim.screen,sim.mission,sim.selected)
         self.addCleanup(lambda:self.assertEqual((sim.screen,sim.mission,sim.selected),original))
-        with patch.dict('sys.modules',{'curses':curses}),patch('screensaver.time.monotonic',return_value=100),patch('screensaver.Galaxy') as galaxy:
-            galaxy.return_value.runs.return_value=[(2,4,'⣿⣤',18,False)]
+        with patch.dict('sys.modules',{'curses':curses}),patch('screensaver.time.monotonic',return_value=100),patch('screensaver.animation') as factory:
+            factory.return_value.runs.return_value=[(2,4,'⣿⣤',18,False)]
             if draw_error:
                 with self.assertRaises(RuntimeError):
                     show_screensaver(screen,sim,colors)
             else:
                 show_screensaver(screen,sim,colors)
+        factory.assert_called_once_with(saver)
         self.assertEqual(sim.paused,paused)
         self.assertEqual(sim.last_tick,100)
         sim.tick.assert_called_once()
@@ -102,8 +110,163 @@ class ScreensaverStateTests(unittest.TestCase):
             self.assertEqual(curses.init_pair.call_count,expected)
             screen.addstr.assert_called_once()
 
+    def test_each_choice_enters_and_restores_the_original_mission_and_clock(self):
+        for saver in SCREENSAVERS:
+            self.run_saver(['\r'],saver=saver)
+        self.assertIsInstance(animation('earth'),Earth)
+        self.assertIsInstance(animation('saturn'),Saturn)
+        self.assertIsInstance(animation('black-hole'),BlackHole)
+        self.assertIsInstance(animation('milky-way'),Galaxy)
+
+    def test_animation_initialization_also_pauses_and_restores_on_failure(self):
+        screen=Mock();screen.getbkgd.return_value=987
+        sim=SimpleNamespace(paused=False,running=True,last_tick=0,tick=Mock())
+        def fail(_):
+            self.assertTrue(sim.paused)
+            raise RuntimeError('initialization failed')
+        with patch('screensaver.animation',side_effect=fail):
+            with self.assertRaises(RuntimeError):show_screensaver(screen,sim)
+        self.assertFalse(sim.paused)
+        screen.bkgd.assert_called_with(987)
+
     def test_unexpected_draw_failure_restores_clock_and_terminal(self):
         self.run_saver(['\r'],draw_error=RuntimeError('draw failed'))
+
+class BodySceneTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.scenes=(Earth(),Saturn(),BlackHole())
+
+    def test_shapes_fit_tiny_and_large_resizes_with_valid_palette_indices(self):
+        for scene in self.scenes:
+            for w,h in ((1,1),(20,8),(64,22),(120,40),(200,60)):
+                with self.subTest(scene=type(scene).__name__,size=(w,h)):
+                    frame=scene.frame(w,h,8)
+                    self.assertEqual(len(frame),h)
+                    self.assertTrue(all(len(row)==w for row in frame))
+                    self.assertTrue(all(0<=color<32 for row in frame for _,color,_ in row))
+            self.assertEqual(scene.frame(0,20,1),[])
+            self.assertEqual(scene.frame(20,0,1),[])
+
+    def test_animation_is_repeatable_and_continuous_across_adjacent_frames(self):
+        for scene in self.scenes:
+            with self.subTest(scene=type(scene).__name__):
+                a=scene.frame(120,40,8)
+                b=scene.frame(120,40,8+1/30)
+                c=scene.frame(120,40,15)
+                changed=lambda f:sum(x!=y for row,other in zip(a,f) for x,y in zip(row,other))
+                self.assertGreater(changed(b),0)
+                self.assertLess(changed(b),changed(c))
+                scene.frame(64,22,9)
+                self.assertEqual(a,scene.frame(120,40,8))
+                self.assertNotEqual(a,scene.frame(120,40,8,zoom=.7))
+                text=''.join(char for row in a for char,_,_ in row)
+                self.assertTrue(any(0x2800<ord(c)<=0x28ff for c in text))
+                self.assertNotIn('Enter',text)
+                self.assertNotIn('SOLAR',text)
+
+    def test_monochrome_shading_keeps_dots_inside_each_cell(self):
+        raster=Raster(2,1,monochrome=True)
+        for i in range(2):
+            for row in DOTS:
+                for bit in row:raster.dot(i,bit,0,.6)
+        self.assertTrue(all(0<mask<255 for mask in raster.masks))
+        self.assertNotEqual(raster.masks[0],raster.masks[1])
+
+    def test_draw_runs_reproduce_frame_and_monochrome_retains_texture(self):
+        for scene in self.scenes:
+            for mono in (False,True):
+                scene.monochrome=mono
+                frame=scene.frame(64,22,4)
+                reconstructed=[[(' ',24,False) for _ in range(64)] for _ in range(22)]
+                for y,x,text,color,bold in scene.runs(64,22,4):
+                    self.assertLessEqual(x+len(text),64)
+                    for i,char in enumerate(text):reconstructed[y][x+i]=(char,color,bold)
+                self.assertEqual(reconstructed,frame)
+            scene.monochrome=False
+
+    def test_earth_has_recognizable_land_ocean_and_polar_ice(self):
+        earth=self.scenes[0]
+        def surface(lon,lat):
+            return earth.land[int((90-lat)*earth.TH/180)*earth.TW+int((lon+180)*earth.TW/360)]
+        for lon,lat in ((-100,40),(-45,-15),(20,10),(135,-25)):
+            self.assertEqual(surface(lon,lat),1,(lon,lat))
+        for lon,lat in ((-140,0),(-30,20)):
+            self.assertEqual(surface(lon,lat),0,(lon,lat))
+        self.assertEqual(surface(0,-80),2)
+
+    def test_saturn_occludes_far_rings_and_near_rings_cover_the_planet(self):
+        saturn=self.scenes[1]
+        frame=saturn.frame(120,40,8)
+        # Two symmetric points at ring-plane v=+/-0.6, projected into the globe.
+        self.assertIn(frame[14][63][1]//8,(0,1))
+        self.assertEqual(frame[25][56][1]//8,2)
+        # A ring gap is transparent: it must not erase the globe behind it.
+        radius=min(120*.34,40*1.03)
+        for py in range(160):
+            for px in range(240):
+                if ((px+.5-120)/radius)**2+((80-py-.5)/radius)**2<.95:
+                    glyph=frame[py//4][px//2][0]
+                    self.assertTrue(0x2800<ord(glyph)<=0x28ff)
+                    self.assertTrue((ord(glyph)-0x2800)&DOTS[py%4][px%2])
+
+    def test_black_hole_shadow_stays_dark_and_scenes_have_distinct_palettes(self):
+        frame=self.scenes[2].frame(120,40,8)
+        for y in range(17,23):
+            for x in range(55,65):self.assertEqual(frame[y][x][0],' ')
+        self.assertEqual(len({scene_palette(n,'cosmic') for n in BASIC}),3)
+        for name in BASIC:
+            for theme in THEMES:
+                palette=scene_palette(name,theme)
+                self.assertEqual(len(palette),32)
+                self.assertTrue(all(0<=c<=255 for c in palette))
+
+
+class SaverPreferenceTests(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.path=Path(self.temp.name)/'settings.json'
+
+    def test_existing_theme_preferences_migrate_without_losing_either_choice(self):
+        self.path.write_text('{"version":1,"theme":"amber"}')
+        settings=Settings(self.path)
+        self.assertEqual(settings.screensaver,'milky-way')
+        self.assertEqual(settings.theme,'amber')
+        for name in SCREENSAVERS:
+            settings.set_screensaver(name)
+            restored=Settings(self.path)
+            self.assertEqual((restored.theme,restored.screensaver),('amber',name))
+        settings.set_theme('ocean')
+        self.assertEqual(Settings(self.path).screensaver,'black-hole')
+        self.assertEqual(Settings(self.path).theme,'ocean')
+
+    def test_commands_numbers_aliases_completion_and_reset_preserve_the_choice(self):
+        sim=Simulation(settings_path=self.path,launch_cache_path=self.path.with_name('launch.json'))
+        sim.command('/mission Apollo 11 1 minute');replay=sim.mission
+        sim.command('/setting')
+        for i,name in enumerate(SCREENSAVERS,6):
+            sim.command(str(i))
+            self.assertEqual(sim.settings.screensaver,name)
+            self.assertIs(sim.mission,replay)
+        for alias,expected in (('milky way','milky-way'),('black hole','black-hole'),('galaxy','milky-way')):
+            sim.command('/setting screensaver '+alias)
+            self.assertEqual(sim.settings.screensaver,expected)
+        sim.command('/setting screensaver earth');sim.command('/reset')
+        self.assertEqual(sim.settings.screensaver,'earth')
+        self.assertIn('/setting screensaver black-hole',completions('/setting screensaver bla',sim))
+        self.assertIn('Choose milky-way',sim.command('/setting screensaver imaginary'))
+        self.assertEqual(sim.settings.screensaver,'earth')
+
+    def test_malformed_preferences_and_failed_saves_do_not_erase_current_values(self):
+        for text in ('[]','bad','{"theme":[],"screensaver":"earth"}',
+                     '{"theme":"ocean","screensaver":[]}', '{"screensaver":"imaginary"}'):
+            self.path.write_text(text)
+            value=Settings(self.path)
+            self.assertIn(value.theme,THEMES)
+            self.assertIn(value.screensaver,SCREENSAVERS)
+        value=Settings(self.path/'missing')
+        with self.assertRaises(OSError):value.set_screensaver('saturn')
+        self.assertEqual(value.screensaver,'milky-way')
 
 
 if __name__=='__main__':

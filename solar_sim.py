@@ -12,7 +12,7 @@ from missions import SPACECRAFT, Spacecraft
 from day_lengths import day_label
 from flight_replay import FLIGHTS
 from screensaver import show_screensaver
-from themes import THEMES
+from themes import THEMES, SCREENSAVERS
 
 WELCOME = f"""WELCOME TO YOUR OBSERVATORY
 
@@ -24,8 +24,8 @@ Explore the giants with /moons jupiter and /view saturn.
 The clock follows the actual current UTC time. /orbit opens full-screen orbits.
 Use /speed 3 to accelerate, /realtime to return to now, /sync status for JPL data.
 Tab completes; Up/Down recalls history; Left/Right changes camera; Ctrl+B/F edits.
-Try /setting for five themes and /live for current launch status and webcasts.
-Full-screen: Enter on an empty line opens the Milky Way; Enter returns.
+Try /setting for themes and screensavers; /live for launch status and webcasts.
+Full-screen: Enter on an empty line opens your screensaver; Enter returns.
 
 JPL Horizons positions download in the background; offline fallbacks are labeled.
 Try /day earth or /mission Apollo 11 1 minute for a timed historical flight.
@@ -57,7 +57,8 @@ def completions(line, sim=None):
     command = line.split()[0].lower()
     choices = bodies
     if command in ('/setting','/settings'):
-        choices=list(THEMES)+['theme','exit','1','2','3','4','5']
+        choices=(list(SCREENSAVERS) if len(line.split())>1 and line.split()[1].lower() in ('screensaver','saver') else
+                 list(THEMES)+['theme','screensaver','exit',*map(str,range(1,10))])
     elif command=='/camera':
         choices=['system','close','body','high','wide','earth','moon','next','prev']
     elif command=='/live':
@@ -363,7 +364,7 @@ def tui(screen, sim, no_color=False):
             write(h-3,4,command[start:start+available])
             if not command:
                 write(h-3,4,"Type a slash command…",8)
-            write(h-2,2,f'←/→ camera:{sim.camera.name}  Ctrl+B/F edit  Enter empty:galaxy  /setting /live',8)
+            write(h-2,2,f'←/→ camera:{sim.camera.name}  Ctrl+B/F edit  Enter empty:saver  /setting /live',8)
             try:
                 curses.curs_set(1)
                 screen.move(h-3,4+cursor-start)

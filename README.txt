@@ -129,7 +129,7 @@ simulation time. /now, /realtime or /reset returns to the actual time.
 
 KEYBOARD
 
-    Enter on empty input    Full-screen rotating Milky Way screensaver
+    Enter on empty input    Full-screen animation chosen in /setting
     Enter in screensaver    Return to exactly the previous view
     Tab                     Complete a command or a body name
     Up / Down               Recall this session's command history
@@ -286,12 +286,13 @@ FILES
     ephemeris_cache.json       Created after a successful JPL download
     catalog.py                Body data and JPL orbital coefficients
     missions.py               Spacecraft catalogue, status and mission profiles
-    screensaver.py            Smooth colored Milky Way animation
+    screensaver.py            Four animations and safe UI/clock restoration
+    screensaver_scenes.py     Procedural Earth, Saturn and black hole
     themes.py                 Five themes and local preferences
     camera.py                 Shared orbit/replay camera scales
     live_launches.py          Background launch status and webcast links
     test_controls.py          Theme, camera and launch feed checks
-    test_screensaver.py       Galaxy rendering and view/clock restoration checks
+    test_screensaver.py       Animation, preferences and view/clock checks
     flight_replay.py          Ten flight timelines, playback clock and routes
     day_lengths.py            Mean solar-day and sidereal-rotation calculations
     test_solar_sim.py         Regression tests for math and commands
@@ -506,25 +507,44 @@ snapshots and exit immediately; they do not wait for a replay to finish.
     python3 solar_sim.py --offline -c '/day venus'
     python3 solar_sim.py --offline -c '/mission Apollo 11 1 minute' -c '/mission seek 47'
 
-MILKY WAY SCREENSAVER
+ANIMATED SCREENSAVERS
+
+Open /setting to choose a screensaver and save it for the next start:
+
+    /setting screensaver milky-way     Rotating spiral arms and warm core
+    /setting screensaver earth         Shaded Earth, continents and clouds
+    /setting screensaver saturn        Banded planet, shadow and tilted rings
+    /setting screensaver black-hole    Dark shadow and swirling luminous disk
+
+Numbers 6-9 in the settings panel select these four choices; 1-5 still
+choose themes. Spaces also work: /setting screensaver black hole.
+The default is Milky Way. Existing theme preferences are preserved.
 
 In full-screen mode, press Enter on a blank command line (spaces count as
-blank). The whole interface disappears and a colored spiral galaxy rotates
-against a quiet starfield. Press Enter again to return to the same view,
-response, selection and command history. Esc also returns; Ctrl+C or Ctrl+D
-exits the app. Left/Right changes galaxy framing; other keys are ignored.
+blank). The whole interface disappears into the chosen animation against
+a quiet starfield. Enter again returns to the same view, response, selection
+and command history. Esc returns; Ctrl+C or Ctrl+D exits the app.
+Left/Right changes animation zoom. Other keys are ignored.
 
-The animation uses a separate real-time clock and targets 30 frames per
-second, using Unicode braille for subcell detail. It uses blue/violet arms,
-a warm central glow and subtle stars; 256-color terminals get gradient
-colors, basic terminals get a simpler palette and --no-color stays
-monochrome. It fits terminal resizes without showing interface overlays.
+The animations use a separate real-time clock and target 30 frames per
+second, with Unicode braille for subcell detail and time-based rotation.
+Cached geometry keeps rotation smooth; no per-frame random particles are
+used. Earth has stylized geography, polar ice, drifting clouds and a blue
+limb. Saturn's near rings cover the planet while its globe hides the far
+rings; ring gaps and a cast shadow add depth. The black hole has a dark
+center, a bright photon rim, a lensed arc and a rotating accretion pattern.
 
-The simulation clock and mission replay pause while the screensaver is
-visible. Returning restores the earlier pause/resume state without skipping
-mission stages. The galaxy is an artistic animation, not an astronomical
-Milky Way model. It is available in the full-screen interface, not --plain
-or one-shot -c output. No packages, images or downloads are needed.
+256-color terminals get gradients; basic terminals get a simpler palette.
+The new objects retain recognizable natural colors; the sky adapts to the
+selected theme. Mono and --no-color include dot shading for texture.
+The animation fits terminal resizes without interface overlays.
+
+The simulation clock and any mission replay pause, including while the
+animation initializes. Returning restores the earlier pause/resume state
+without skipping mission stages. These are artistic visualizations:
+Earth's map is simplified and the black hole is not a relativity solver.
+Screensavers are available in the full-screen interface, not --plain or
+one-shot -c output. No packages, images or downloads are needed.
 
 THEMES, CAMERAS AND LIVE LAUNCHES
 
@@ -550,7 +570,7 @@ unlocated spacecraft marker and "Position unavailable", not an invented
 trajectory or an unrelated mission replay. /live exit restores the previous
 target. Replay geometry is schematic; catalogue spacecraft orbits are
 illustrative. Markers are enlarged, dotted limbs are size references.
-Ctrl+B/F or Home/End edits input. Screensaver arrows change galaxy framing.
+Ctrl+B/F or Home/End edits input. Screensaver arrows change animation framing.
 
 /live requests actual launch status from The Space Devs Launch Library 2.
 Reported in-flight launches appear first, followed by matches from the

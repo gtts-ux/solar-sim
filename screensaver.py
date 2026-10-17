@@ -1,8 +1,9 @@
-"""A deterministic, subcell-rendered spiral galaxy for the terminal."""
+"""Full-screen, time-based terminal animations and safe return to the simulator."""
 import math
 import random
 import time
 from themes import galaxy_palette
+from screensaver_scenes import Earth, Saturn, BlackHole, scene_palette, BASIC
 
 # Four eight-step ramps: blue arms, violet arms, amber bulge and white stars.
 PALETTE = (17,18,24,25,32,39,75,117,
@@ -110,23 +111,33 @@ class Galaxy:
                 yield y,start,''.join(chars),color,bold
 
 
+def animation(name):
+    if name=='earth':return Earth()
+    if name=='saturn':return Saturn()
+    if name=='black-hole':return BlackHole()
+    return Galaxy()
+
+
 def show_screensaver(screen,sim,colors=False):
     """Temporarily own the display and preserve the caller's complete UI state."""
     import curses
-    galaxy=Galaxy()
-    theme=getattr(getattr(sim,'settings',None),'theme','cosmic')
-    palette=galaxy_palette(theme)
-    extended=colors and curses.COLORS>=256 and curses.COLOR_PAIRS>len(PALETTE)+9
-    if extended:
-        for index,color in enumerate(palette):
-            curses.init_pair(9+index,color,curses.COLOR_BLACK)
     previous_background=screen.getbkgd()
     sim.tick()
     paused=sim.paused
     sim.paused=True
-    started=time.monotonic()
-    deadline=started
     try:
+        name=getattr(getattr(sim,'settings',None),'screensaver','milky-way')
+        scene=animation(name)
+        theme=getattr(getattr(sim,'settings',None),'theme','cosmic')
+        scene.monochrome=not colors or theme=='mono'
+        palette=scene_palette(name,theme) if name in BASIC else galaxy_palette(theme)
+        basic=BASIC.get(name,(4,5,3,7))
+        extended=colors and curses.COLORS>=256 and curses.COLOR_PAIRS>len(PALETTE)+9
+        if extended:
+            for index,color in enumerate(palette):
+                curses.init_pair(9+index,color,curses.COLOR_BLACK)
+        started=time.monotonic()
+        deadline=started
         try:
             curses.curs_set(0)
         except curses.error:
@@ -141,10 +152,10 @@ def show_screensaver(screen,sim,colors=False):
                 height,width=screen.getmaxyx()
                 screen.erase()
                 zoom=(1,.70,.90,1.12,1.35)[getattr(getattr(sim,'camera',None),'index',0)]
-                for y,x,text,color,bold in galaxy.runs(max(0,width-1),height,now-started,zoom=zoom):
+                for y,x,text,color,bold in scene.runs(max(0,width-1),height,now-started,zoom=zoom):
                     style=0
                     if colors:
-                        style=curses.color_pair(9+color if extended else (4,5,3,7)[color//8])
+                        style=curses.color_pair(9+color if extended else basic[color//8])
                     if bold:
                         style|=curses.A_BOLD
                     elif color%8<3:

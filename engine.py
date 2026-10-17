@@ -13,7 +13,7 @@ from ephemeris import Ephemeris
 from missions import SPACECRAFT, Spacecraft, mission_profile, orbiters
 from day_lengths import day_info, day_label
 from flight_replay import Playback, catalogue as flight_catalogue, find_flight, flight_info, parse_request
-from themes import Settings, THEMES
+from themes import Settings, THEMES, SCREENSAVERS
 from camera import Camera, Point, render as render_camera
 from live_launches import LaunchFeed, SOURCE as LAUNCH_SOURCE, countdown, launch_detail, date as launch_date, https_url
 
@@ -47,7 +47,7 @@ HELP = """EXPLORE
   /weight 70 mars         Weight for a mass in kg, in newtons and Earth kg-equivalent
   /distance earth mars    Approximate center-to-center distance at simulation time
   /random                 Discover a random body
-  /setting                Five themes; /setting theme amber changes and saves
+  /setting                Themes and four animated screensavers; choices save
   /camera wide            Camera: system, close, body, high, wide, next, prev
   /live                   Current and upcoming NASA, ESA/European and SpaceX launches
   /live NUMBER            Launch details; /live watch NUMBER opens a webcast
@@ -84,7 +84,7 @@ APP
   /quit                   Exit (/exit also works)
 
 KEYS (full-screen mode)
-  Enter on an empty command opens the Milky Way screensaver; Enter returns.
+  Enter on an empty command opens your chosen screensaver; Enter returns.
   The simulation pauses during the screensaver and resumes its previous state.
   Left/Right zooms around the active planet, moon or spacecraft.
   Ctrl+B/F moves the input cursor; Home/End still edit the command line.
@@ -168,6 +168,8 @@ provide text snapshots, with /mission status or seek to inspect progress.
 THEMES, CAMERAS AND LIVE LAUNCHES
 /setting lists five persistent themes: Cosmic, Amber, Ocean, Forest and Mono.
 /setting theme amber applies one immediately. --no-color overrides colors.
+/setting screensaver earth chooses Milky Way, Earth, Saturn or a black hole.
+Enter on an empty line opens it; Enter again returns. Choices save locally.
 Left/Right cycles system/close/body/high/wide cameras around the active target.
 Ctrl+B/F edits input. Local camera scales use kilometers and enlarged markers;
 mission geometry remains an illustration. Camera/theme changes do not stop missions.
@@ -530,7 +532,12 @@ class Simulation:
             if len(args)==1 and args[0].lower()=='exit':
                 self.overlay=None
                 return self.status()
-            if args:
+            if args and args[0].lower() in ('screensaver','saver'):
+                if len(args)>1:self.settings.set_screensaver(' '.join(args[1:]))
+                else:self.overlay='settings'
+            elif len(args)==1 and args[0] in ('6','7','8','9'):
+                self.settings.set_screensaver(list(SCREENSAVERS)[int(args[0])-6])
+            elif args:
                 choice=args[1].lower() if len(args)==2 and args[0].lower()=='theme' else args[0].lower() if len(args)==1 else ''
                 if choice in ('1','2','3','4','5'):choice=list(THEMES)[int(choice)-1]
                 self.settings.set_theme(choice)
