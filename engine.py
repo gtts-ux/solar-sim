@@ -78,6 +78,7 @@ SIMULATE
   /export                 Save a JSON snapshot in this folder's exports directory
 
 APP
+  /menu                   Arrow navigation (full-screen); Tab empty or F2 also opens it
   /info                   Model, accuracy and data notes
   /sources                Astronomy reference links
   /help                   This command guide
@@ -90,6 +91,8 @@ KEYS (full-screen mode)
   Left/Right zooms around the active planet, moon or spacecraft.
   Ctrl+B/F moves the input cursor; Home/End still edit the command line.
   Tab completes names/commands. Up/Down recall commands.
+  Tab on empty input or F2 opens the menu: arrows choose, Enter opens, Esc backs out.
+  Outside the menu, Left/Right changes camera and Up/Down recalls history.
   Page Up/Down scroll responses. Ctrl+U clears input. Ctrl+C or Ctrl+D exits.
   Resize the terminal at any time. A larger window shows more detail.
 
@@ -358,7 +361,7 @@ COMMANDS = ["mission", "missions", "day", "satellites", "satellite", "dwarf", "m
             "now", "reset", "scale", "labels", "trails", "export", "info", "sources", "help", "clear", "quit", "exit"]
 
 
-COMMANDS = ['setting','settings','camera','live'] + COMMANDS
+COMMANDS = ['menu','setting','settings','camera','live'] + COMMANDS
 
 
 class Simulation:
@@ -530,6 +533,12 @@ class Simulation:
         if not parts:
             return "Type /planet to explore or /help for all commands."
         cmd, args = parts[0].lower(), parts[1:]
+        if cmd=='menu':
+            if args:
+                raise ValueError('Usage: /menu')
+            return ('ARROW NAVIGATION\n\nIn full-screen mode, /menu, F2 or Tab on empty input opens the menu.\n'
+                    'Left/Right switches sections; Up/Down chooses; Enter opens; Esc goes back.\n'
+                    'The arrow menu needs a macOS/Linux curses terminal. Plain mode uses slash commands; /help lists them.')
         if cmd in ('setting','settings'):
             if len(args)==1 and args[0].lower()=='exit':
                 self.overlay=None

@@ -140,6 +140,7 @@ COMMAND REFERENCE
     /export                 JSON snapshot in exports/ beside these files
 
     /info                   Model and data accuracy notes
+    /menu                   Open full-screen arrow navigation (Tab empty or F2)
     /sources                Astronomy source links
     /help                   Command reference and keyboard shortcuts
     /clear                  Clear response panel
@@ -159,7 +160,8 @@ KEYBOARD
 
     Enter on empty input    Full-screen animation chosen in /setting
     Enter in screensaver    Return to exactly the previous view
-    Tab                     Complete a command or a body name
+    Tab on empty input / F2 Open the arrow navigation menu
+    Tab while typing        Complete a command or a body name
     Up / Down               Recall this session's command history
     Left / Right            Cycle camera in every full-screen view
     Ctrl+B / Ctrl+F         Move input cursor
@@ -171,6 +173,30 @@ KEYBOARD
     Esc                     Leave orbit view or stop a mission replay
     Page Up / Page Down     Scroll response panel
     Ctrl+C / Ctrl+D         Exit cleanly
+
+ARROW NAVIGATION (full-screen macOS/Linux)
+
+Open with Tab on empty input, F2 or /menu. Left/Right changes section;
+Up/Down selects an item; Enter opens or applies it. Esc goes back one level,
+then closes the menu; F2 closes it immediately. Page Up/Down scrolls lists;
+Home/End selects the first/last item. Press / to return to command entry.
+
+Sections: Views, Planets, Moons, Spacecraft, Dwarfs, Missions, Settings,
+Clock and Live. A body opens actions for its profile, orbit and other data.
+Dwarfs stay separate; selecting a dwarf action enters its catalogue, and a
+normal planet action returns to normal planets. Moon/spacecraft lists follow
+the current catalogue. Missions offer 30-second, 1-minute and 5-minute runs.
+Settings offers all themes, screensavers, animation preview and camera zoom.
+Date/time and comparison items prepare a command for your typed values.
+Live lists cached launches; open/refresh the feed to request current data,
+then reopen the menu to select a launch with arrows.
+
+Browsing/cancelling leaves your current view and replay running. Selecting
+an action has the same effect as its slash command. Theme, screensaver,
+pause/resume and speed changes keep the menu open; F2 returns to your view.
+Outside the menu,
+Left/Right remains camera zoom and Up/Down recalls command history. Enter on
+an empty prompt still opens your screensaver. Plain mode uses slash commands.
 
 On a MacBook, Page Up/Down is usually Fn+Up/Down. History is in memory
 only. Resizing the terminal preserves the simulation and current input.

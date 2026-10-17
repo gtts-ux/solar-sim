@@ -13,6 +13,7 @@ from day_lengths import day_label
 from flight_replay import FLIGHTS
 from screensaver import show_screensaver
 from themes import THEMES, SCREENSAVERS
+from navigation import Navigation
 
 WELCOME = f"""WELCOME TO YOUR OBSERVATORY
 
@@ -23,7 +24,9 @@ Explore the giants with /moons jupiter and /view saturn.
 
 The clock follows the actual current UTC time. /orbit opens full-screen orbits.
 Use /speed 3 to accelerate, /realtime to return to now, /sync status for JPL data.
-Tab completes; Up/Down recalls history; Left/Right changes camera; Ctrl+B/F edits.
+Tab on empty input or F2 opens the arrow menu; /menu works too.
+In the menu: arrows navigate, Enter opens, Esc goes back. Tab completes commands.
+Outside the menu: Up/Down history; Left/Right camera; Ctrl+B/F edits.
 Try /setting for themes and screensavers; /live for launch status and webcasts.
 Full-screen: Enter on an empty line opens your screensaver; Enter returns.
 
@@ -150,11 +153,11 @@ def tui(screen, sim, no_color=False):
             style |= curses.A_BOLD
         return style
 
-    def write(y,x,text,color=7,bold=False):
+    def write(y,x,text,color=7,bold=False,highlight=False):
         h,w = screen.getmaxyx()
         if 0 <= y < h and 0 <= x < w-1:
             try:
-                screen.addnstr(y,x,str(text),w-x-1,attr(color,bold))
+                screen.addnstr(y,x,str(text),w-x-1,attr(color,bold) | (curses.A_REVERSE if highlight else 0))
             except curses.error:
                 pass
 
@@ -237,6 +240,38 @@ def tui(screen, sim, no_color=False):
         write(h-6,2,'Following: '+replay.flight.name+' spacecraft / schematic route / '+sim.camera_label,8)
         write(h-5,2,'/pause /resume · /mission seek 50 · /mission restart · Esc /mission stop',8)
 
+    def draw_navigation(h,w):
+        for y in range(3,h-4):
+            write(y,0,' '*(w-1))
+        write(3,2,'ARROW NAVIGATION',6,True)
+        write(4,2,'Left/Right: section   Up/Down: choose   Enter: open',8)
+        divider=18
+        for i,label in enumerate(navigation.sections):
+            write(6+i,2,('> ' if i==navigation.section else '  ')+label,6 if i==navigation.section else 8,i==navigation.section)
+        for y in range(5,h-6):
+            write(y,divider,'│',8)
+        x=divider+3
+        write(5,x,navigation.title.upper(),6,True)
+        selected=navigation.current(sim)
+        entries=navigation.items(sim)
+        if not entries:
+            write(7,x,'No objects in this catalogue.',8)
+        available=max(1,h-16)
+        first=max(0,min(navigation.index-available//2,len(entries)-available))
+        for offset,item in enumerate(entries[first:first+available]):
+            chosen=first+offset==navigation.index
+            current=(item.commands==('/setting theme '+sim.settings.theme,) or
+                     item.commands==('/setting screensaver '+sim.settings.screensaver,))
+            suffix='  [saved]' if current else '  >' if item.children else ''
+            text=('> ' if chosen else '  ')+item.label+suffix
+            write(7+offset,x,text[:w-x-2].ljust(w-x-2),6 if chosen else 7,chosen,chosen)
+        write(h-8,x,f'{navigation.index+1 if entries else 0}/{len(entries)}  /  '+(' / '.join(p.title for p in navigation.pages) or navigation.sections[navigation.section]),8)
+        if selected:
+            for i,line in enumerate(wrap_lines(selected.detail,w-6)[:2]):
+                write(h-7+i,2,line,7)
+        write(h-5,2,navigation.feedback or 'Esc: back / close   F2: close   /: type a command',3 if navigation.feedback else 8)
+
+    navigation=Navigation()
     response = WELCOME
     feedback=''
     command = ""
@@ -357,17 +392,24 @@ def tui(screen, sim, no_color=False):
                             if char!=' ':write(6+y,x+dx,char,color,bold)
                 write(h-6,2,f'{scroll+1}-{min(len(wrapped),scroll+response_height)} of {len(wrapped)} / PgUp/PgDn scroll / Esc returns',8)
                 write(h-5,2,feedback,3)
+            if navigation.opened:
+                draw_navigation(h,w)
             rule(h-4)
             write(h-3,2,"›",6,True)
             available = w-8
             start = max(0,cursor-available+1)
-            write(h-3,4,command[start:start+available])
-            if not command:
+            if navigation.opened:
+                write(h-3,4,'Browse with arrows; Enter selects.',8)
+            elif not command:
                 write(h-3,4,"Type a slash command…",8)
-            write(h-2,2,f'←/→ camera:{sim.camera.name}  Ctrl+B/F edit  Enter empty:saver  /setting /live',8)
+            else:
+                write(h-3,4,command[start:start+available])
+            write(h-2,2,'←/→ section  ↑/↓ item  Enter open  Esc back  F2 close' if navigation.opened else
+                  f'Tab empty/F2 menu  ←/→ camera:{sim.camera.name}  ↑/↓ history  Enter empty:saver',8)
             try:
-                curses.curs_set(1)
-                screen.move(h-3,4+cursor-start)
+                curses.curs_set(0 if navigation.opened else 1)
+                if not navigation.opened:
+                    screen.move(h-3,4+cursor-start)
             except curses.error:
                 pass
         screen.noutrefresh()
@@ -378,6 +420,36 @@ def tui(screen, sim, no_color=False):
             continue
         if key in ("\x03","\x04"):
             sim.running = False
+        elif key == curses.KEY_F2 or (key=='\t' and not command.strip() and not navigation.opened):
+            navigation.toggle()
+        elif navigation.opened:
+            if key=='\x1b':
+                navigation.back()
+            elif key in (curses.KEY_LEFT,curses.KEY_RIGHT):
+                navigation.change_section(-1 if key==curses.KEY_LEFT else 1)
+            elif key in (curses.KEY_UP,curses.KEY_DOWN,curses.KEY_PPAGE,curses.KEY_NPAGE):
+                direction=-1 if key in (curses.KEY_UP,curses.KEY_PPAGE) else 1
+                step=max(1,h-16) if key in (curses.KEY_PPAGE,curses.KEY_NPAGE) else 1
+                navigation.move(direction*step,sim)
+            elif key in (curses.KEY_HOME,curses.KEY_END):
+                navigation.move(-10000 if key==curses.KEY_HOME else 10000,sim)
+            elif key in ('\n','\r',curses.KEY_ENTER):
+                item=navigation.activate(sim)
+                if item:
+                    if item.screensaver:
+                        show_screensaver(screen,sim,colors)
+                    elif item.prompt:
+                        command=item.prompt
+                        cursor=len(command)
+                        navigation.opened=False
+                    else:
+                        response=navigation.execute(item,sim)
+                        feedback=response.splitlines()[0] if response else ''
+                        scroll=0
+            elif key=='/':
+                navigation.opened=False
+                command='/'
+                cursor=1
         elif key == "\x1b":
             if sim.overlay:
                 sim.overlay=None
@@ -391,8 +463,12 @@ def tui(screen, sim, no_color=False):
             if command.strip():
                 history.append(command)
                 history = history[-300:]
-                response = sim.command(command)
-                feedback=response.splitlines()[0] if response else ''
+                if command.strip().lower().lstrip('/')=='menu':
+                    navigation.opened=True
+                    navigation.feedback=''
+                else:
+                    response = sim.command(command)
+                    feedback=response.splitlines()[0] if response else ''
                 scroll = 0
             else:
                 show_screensaver(screen,sim,colors)
