@@ -11,8 +11,10 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 
 from camera import Camera, PRESETS, Point, render, mission_geometry
+from catalog import PLANETS, MOONS, DWARF_PLANETS, SUN, lookup, satellites
 from engine import Simulation
 from flight_replay import FLIGHTS, Playback
+from missions import SPACECRAFT, orbiters
 from live_launches import API, LaunchFeed, countdown, get_json, launch_detail, parse_launch, parse_page
 from solar_sim import completions
 from themes import THEMES, Settings, galaxy_palette
@@ -82,7 +84,7 @@ class ThemeCameraTests(unittest.TestCase):
         before=self.sim.date
         for _ in PRESETS:self.sim.camera.cycle(1)
         self.assertEqual(self.sim.camera.name,'system')
-        self.sim.camera.cycle(-1);self.assertEqual(self.sim.camera.name,'moon')
+        self.sim.camera.cycle(-1);self.assertEqual(self.sim.camera.name,'wide')
         self.sim.camera.cycle(1);self.assertEqual(self.sim.camera.name,'system')
         for name,_,_ in PRESETS:
             self.assertIn('CAMERA',self.sim.command('/camera '+name))
@@ -114,9 +116,9 @@ class ThemeCameraTests(unittest.TestCase):
                     camera=Camera();camera.select(name)
                     frame=replay.scene(60,8,camera)
                     self.assertEqual((len(frame),len(frame[0])),(8,60))
-                    if name=='close':
-                        marker='!' if replay.stage.visual=='abort' else '>'
-                        self.assertIn(marker,''.join(c[0] for row in frame for c in row))
+                    marker='!' if replay.stage.visual=='abort' else '>'
+                    self.assertEqual(frame[round(7/2)][round(59/2)][0],marker,
+                                     (flight.name,replay.stage.name,name))
 
     def test_orbit_camera_uses_selected_body_and_completions_are_available(self):
         self.sim.command('/date 2026-10-17')
@@ -124,6 +126,85 @@ class ThemeCameraTests(unittest.TestCase):
         self.assertIn('ISS',''.join(c[0] for row in self.sim.camera_cells(90,24) for c in row))
         for command,result in (('/setting theme am','/setting theme amber'),('/camera mo','/camera moon'),('/live sp','/live spacex')):
             self.assertIn(result,completions(command,self.sim))
+
+    def test_all_planets_moons_and_dwarfs_stay_centered_at_every_local_zoom(self):
+        for body in [SUN,*PLANETS,*MOONS,*DWARF_PLANETS]:
+            self.sim.selected=body
+            self.sim.orbit_focus=None
+            for name in ('close','body','high','wide'):
+                self.sim.camera.select(name)
+                with self.subTest(body=body.name,camera=name):
+                    frame=self.sim.camera_cells(91,25)
+                    self.assertEqual(frame[12][45][0],'O')
+                    self.assertIn(body.name,self.sim.active_name)
+                    # Changing the selection must change the origin, not the date.
+                    self.assertIsNone(self.sim.mission)
+
+    def test_catalogue_spacecraft_follow_their_own_positions_at_every_zoom(self):
+        self.sim.command('/date 2026-10-17')
+        for craft in SPACECRAFT:
+            if craft not in orbiters(craft.parent,self.sim.date):continue
+            self.sim.selected=craft
+            for name in ('close','body','high','wide'):
+                self.sim.camera.select(name)
+                frame=self.sim.camera_cells(91,25)
+                self.assertEqual(frame[12][45][0],'+',(craft.name,name))
+                self.assertEqual(self.sim.active_name,craft.name)
+
+    def test_local_scales_fit_giant_planets_and_their_outermost_moons(self):
+        self.sim.camera.select('body')
+        self.sim.selected=lookup('earth');earth_extent=self.sim.body_framing()[0]
+        self.sim.selected=lookup('jupiter');jupiter_extent=self.sim.body_framing()[0]
+        self.assertGreater(jupiter_extent,10*earth_extent)
+        self.sim.camera.select('wide')
+        for name in ('earth','mars','jupiter','saturn','uranus','neptune','pluto'):
+            self.sim.selected=lookup(name)
+            extent,_=self.sim.body_framing()
+            self.assertTrue(all(extent>b.orbit*(1+b.eccentricity) for b in satellites(name)))
+        self.sim.camera.select('earth');self.assertEqual(self.sim.camera.name,'body')
+        self.sim.camera.select('moon');self.assertEqual(self.sim.camera.name,'wide')
+
+    def test_mission_target_is_spacecraft_and_stopping_restores_previous_body(self):
+        self.sim.command('/orbit mars')
+        self.sim.command('/mission Apollo 11 1 minute')
+        self.assertIn('Apollo 11',self.sim.active_name)
+        self.assertNotEqual(self.sim.active_name,'Earth')
+        self.sim.command('/mission seek 70')
+        replay=self.sim.mission
+        before=(replay.elapsed,self.sim.date)
+        for _ in PRESETS:
+            self.sim.camera.cycle(1)
+            frame=self.sim.active_scene(91,25)
+            self.assertEqual(frame[12][45][0],'>')
+        self.assertEqual((replay.elapsed,self.sim.date),before)
+        self.sim.command('/mission stop')
+        self.assertEqual(self.sim.active_name,'Mars')
+
+    def test_live_spacecraft_overrides_replay_without_inventing_coordinates(self):
+        self.sim.command('/mission Apollo 11 1 minute')
+        replay=self.sim.mission
+        self.sim.launches.rows=(parse_launch(row(name='TEST live flight')),)
+        with patch.object(self.sim.launches,'request'):
+            self.sim.command('/live 1')
+        self.assertIn('TEST live flight',self.sim.active_name)
+        self.assertNotIn('Apollo',self.sim.active_name)
+        for _ in PRESETS:
+            self.sim.camera.cycle(1)
+            frame=self.sim.active_scene(91,25)
+            self.assertEqual(frame[12][45][0],'>')
+            text='\n'.join(''.join(c[0] for c in r) for r in frame)
+            self.assertIn('Position unavailable',text)
+            self.assertIn('Falcon 9',text)
+            self.assertNotIn('Earth',text)
+            self.assertNotIn('Moon',text)
+            self.assertNotIn('Apollo',text)
+        self.assertIs(self.sim.mission,replay)
+        with patch.object(self.sim.launches,'request'), patch('webbrowser.open',return_value=True):
+            self.assertIn('Opened webcast',self.sim.command('/live watch 1'))
+        self.assertIn('TEST live flight',self.sim.active_name)
+        self.sim.command('/live exit')
+        self.assertIn('Apollo 11',self.sim.active_name)
+        self.assertIs(self.sim.mission,replay)
 
 
 class LaunchFeedTests(unittest.TestCase):

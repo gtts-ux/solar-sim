@@ -291,7 +291,7 @@ class Playback:
                 '/pause /resume /mission seek 50 /mission restart /mission stop')
 
     def scene(self,width,height,camera=None):
-        if camera is not None and camera.name!='system':
+        if camera is not None:
             from camera import mission_scene
             return mission_scene(self,width,height,camera)
         width,height=max(24,width),max(6,height)

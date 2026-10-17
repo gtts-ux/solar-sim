@@ -533,14 +533,24 @@ or /setting 2 applies and saves a theme immediately in settings.json.
 It colors the interface and screensaver. --no-color and NO_COLOR override
 colors. /setting exit or Esc returns without stopping a mission.
 
-Left/Right changes cameras in every full-screen view, including missions:
-System (automatic), Close (10 km), Earth (15,000 km), High Earth orbit
-(60,000 km), Moon range (480,000 km). /camera close, /camera earth,
-/camera high, /camera moon or /camera system selects a scale directly.
-Close follows the selection or replay spacecraft; other fixed scales
-center Earth. These are fixed kilometer scales with enlarged markers and
-dotted limb references. Replay geometry remains schematic. Ctrl+B/F or
-Home/End edits input. Screensaver arrows also change galaxy framing.
+Left/Right changes zoom in every full-screen view, including missions:
+System (automatic overview), Close (10 km), Body view, High orbit, Wide.
+Every local zoom centers the active planet, moon or spacecraft. Body and
+High orbit scales grow with the selected body's radius; Wide includes its
+outermost catalogued moon. The actual kilometer scale appears on screen.
+/camera close, /camera body, /camera high, /camera wide or /camera system
+selects directly. Old /camera earth and /camera moon remain aliases for
+Body view and Wide; neither forces the target back to Earth.
+
+During /mission the spacecraft is the active target at every zoom,
+including automatic framing; stopping restores the previous selected body.
+Selecting /live NUMBER or /live watch NUMBER makes that launch's spacecraft
+the target. The feed has no position telemetry, so its preview shows an
+unlocated spacecraft marker and "Position unavailable", not an invented
+trajectory or an unrelated mission replay. /live exit restores the previous
+target. Replay geometry is schematic; catalogue spacecraft orbits are
+illustrative. Markers are enlarged, dotted limbs are size references.
+Ctrl+B/F or Home/End edits input. Screensaver arrows change galaxy framing.
 
 /live requests actual launch status from The Space Devs Launch Library 2.
 Reported in-flight launches appear first, followed by matches from the

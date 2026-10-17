@@ -4,9 +4,9 @@ import math
 
 PRESETS = (('system','System / automatic',None),
            ('close','Close / 10 km',10.),
-           ('earth','Earth / 15,000 km',15000.),
-           ('high','High Earth orbit / 60,000 km',60000.),
-           ('moon','Moon range / 480,000 km',480000.))
+           ('body','Body view / 15,000 km',15000.),
+           ('high','High orbit / 60,000 km',60000.),
+           ('wide','Wide / 480,000 km',480000.))
 
 
 class Camera:
@@ -19,9 +19,20 @@ class Camera:
     def extent(self):return PRESETS[self.index][2]
     def cycle(self,direction):self.index=(self.index+direction)%len(PRESETS)
     def select(self,name):
+        name={'earth':'body','moon':'wide'}.get(name,name)
         names=[p[0] for p in PRESETS]
-        if name not in names:raise ValueError('Camera: system, close, earth, high or moon.')
+        if name not in names:raise ValueError('Camera: system, close, body, high or wide (earth/moon aliases also work).')
         self.index=names.index(name)
+
+    def framing(self,radius=6371.,reach=384400.):
+        """Local scales grow with the target; reach includes its outermost moon."""
+        body=max(10.,radius*15000/6371)
+        high=body*4
+        wide=max(high*8,reach*1.25)
+        extent={'system':None,'close':10.,'body':body,'high':high,'wide':wide}[self.name]
+        title={'system':'System / automatic','close':'Close','body':'Body view',
+               'high':'High orbit','wide':'Wide'}[self.name]
+        return extent, title+(f' / {extent:,.0f} km' if extent else '')
 
 
 @dataclass(frozen=True)
@@ -34,12 +45,16 @@ class Point:
     radius: float=0
 
 
-def render(width,height,camera,points,paths=(),focus=None):
-    """A fixed kilometer scale; markers are enlarged, reference limbs are dotted."""
+def render(width,height,camera,points,paths=(),focus=None,extent=None,label=None):
+    """Center every scale on focus; markers and reference limbs stay illustrative."""
     width,height=max(12,width),max(6,height)
     cells=[[(' ',7,False) for _ in range(width)] for _ in range(height)]
-    target=focus if camera.name=='close' and focus is not None else (0.,0.)
-    extent=camera.extent or 480000.
+    target=focus if focus is not None else (0.,0.)
+    if extent is None:
+        extent=camera.extent
+    if extent is None:
+        extent=max((math.hypot(p.x-target[0],p.y-target[1])+p.radius for p in points),default=1)*1.2
+    extent=max(1.,extent)
     factor=max(1,min((width-12)/2,height-3))/extent
     cx,cy=(width-1)/2,(height-1)/2
     def xy(x,y):return cx+(x-target[0])*factor,cy-(y-target[1])*factor*.5
@@ -70,14 +85,16 @@ def render(width,height,camera,points,paths=(),focus=None):
                 a=i*math.tau/240
                 px,py=xy(point.x+point.radius*math.cos(a),point.y+point.radius*math.sin(a))
                 put(px,py,'.',point.color)
-    for point in points:
+    # Paint the followed object last so nearby labels cannot erase its marker.
+    ordered=sorted(points,key=lambda p: math.hypot(p.x-target[0],p.y-target[1])<1e-6)
+    for point in ordered:
         px,py=xy(point.x,point.y)
         if 0<=round(px)<width and 0<=round(py)<height:
             put(px+2,py,point.name,point.color)
             put(px,py,point.marker,point.color,True)
     off=[p.name for p in points[:2] if not (0<=xy(p.x,p.y)[0]<width and 0<=xy(p.x,p.y)[1]<height)]
     if off:put(1,height-1,'Outside view: '+', '.join(off),8)
-    put(1,0,camera.label,6,True)
+    put(1,0,label or camera.label,6,True)
     return cells
 
 
@@ -130,4 +147,5 @@ def mission_geometry(replay):
 
 def mission_scene(replay,width,height,camera):
     points,paths,focus=mission_geometry(replay)
-    return render(width,height,camera,points,paths,focus)
+    extent,label=camera.framing()
+    return render(width,height,camera,points,paths,focus,extent,label)

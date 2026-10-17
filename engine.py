@@ -48,7 +48,7 @@ HELP = """EXPLORE
   /distance earth mars    Approximate center-to-center distance at simulation time
   /random                 Discover a random body
   /setting                Five themes; /setting theme amber changes and saves
-  /camera moon            Camera: system, close, earth, high, moon, next, prev
+  /camera wide            Camera: system, close, body, high, wide, next, prev
   /live                   Current and upcoming NASA, ESA/European and SpaceX launches
   /live NUMBER            Launch details; /live watch NUMBER opens a webcast
   /live refresh           Refresh when allowed; /live exit returns
@@ -86,7 +86,7 @@ APP
 KEYS (full-screen mode)
   Enter on an empty command opens the Milky Way screensaver; Enter returns.
   The simulation pauses during the screensaver and resumes its previous state.
-  Left/Right changes camera: system, close, Earth, high Earth orbit, Moon range.
+  Left/Right zooms around the active planet, moon or spacecraft.
   Ctrl+B/F moves the input cursor; Home/End still edit the command line.
   Tab completes names/commands. Up/Down recall commands.
   Page Up/Down scroll responses. Ctrl+U clears input. Ctrl+C or Ctrl+D exits.
@@ -168,8 +168,8 @@ provide text snapshots, with /mission status or seek to inspect progress.
 THEMES, CAMERAS AND LIVE LAUNCHES
 /setting lists five persistent themes: Cosmic, Amber, Ocean, Forest and Mono.
 /setting theme amber applies one immediately. --no-color overrides colors.
-Left/Right cycles system/close/Earth/high-Earth-orbit/Moon-range cameras.
-Ctrl+B/F edits input. Fixed camera scales use kilometers and enlarged markers;
+Left/Right cycles system/close/body/high/wide cameras around the active target.
+Ctrl+B/F edits input. Local camera scales use kilometers and enlarged markers;
 mission geometry remains an illustration. Camera/theme changes do not stop missions.
 /live explicitly fetches launch status from The Space Devs Launch Library 2.
 It shows reported in-flight launches plus matches from the next 100 upcoming
@@ -537,12 +537,12 @@ class Simulation:
             else:self.overlay='settings'
             return self.settings.text()
         if cmd=='camera':
-            if len(args)>1:raise ValueError('Usage: /camera moon or /camera next')
+            if len(args)>1:raise ValueError('Usage: /camera wide or /camera next')
             if args:
                 name=args[0].lower()
                 if name in ('next','prev'):self.camera.cycle(1 if name=='next' else -1)
                 else:self.camera.select(name)
-            return 'CAMERA / '+self.camera.label+'\n\nLeft/Right cycles camera scales in every full-screen view.\nClose follows the selected body or mission spacecraft. Earth/high/moon center Earth.\nMission geometry remains schematic. /camera system restores automatic framing.'
+            return 'CAMERA / '+self.camera_label+'\nFollowing: '+self.active_name+'\n\nLeft/Right changes zoom around the active planet, moon or spacecraft.\nBody/high/wide scales adapt to the selected body and its moons.\nMission geometry remains schematic; live launches have no position telemetry.\n/camera system restores automatic framing. earth/moon remain aliases for body/wide.'
         if cmd=='live':
             if len(args)==1 and args[0].lower()=='exit':
                 self.overlay=None
@@ -620,7 +620,6 @@ class Simulation:
             self.view='solar'
             self.orbit_focus=None
             self.preview_missions=False
-            self.selected=lookup('earth')
             self.last_tick=time.monotonic()
             return playback.status()
         if self.mission is not None:
@@ -1038,35 +1037,88 @@ class Simulation:
                       'Status/countdown/webcast links only; no live spacecraft trajectory.']
         return '\n'.join(lines)
 
+    @property
+    def selected_launch(self):
+        if self.overlay!='live':return None
+        return next((r for r in self.live_entries if r.id==self.live_selection),None)
+
+    @property
+    def active_name(self):
+        launch=self.selected_launch
+        if launch:return launch.name+' / '+launch.rocket
+        if self.mission:return self.mission.flight.vehicle+' / '+self.mission.flight.name
+        return (self.orbit_focus or self.selected).name
+
+    def body_framing(self):
+        body=self.orbit_focus or self.selected
+        radius=body.radius
+        if isinstance(body,Spacecraft):radius=lookup(body.parent).radius
+        children=[*satellites(body.name),*orbiters(body.name,self.date)]
+        reach=max((b.orbit*(1+b.eccentricity) for b in children),default=0.)
+        # A moon or catalogue spacecraft gets enough context to see its primary.
+        if body.kind in ('Natural satellite','Artificial satellite'):
+            reach=max(reach,body.orbit*(1+body.eccentricity))
+        return self.camera.framing(radius,reach)
+
+    @property
+    def camera_label(self):
+        if self.selected_launch:
+            return self.camera.framing()[1].split(' / ')[0]+' / position unavailable'
+        if self.mission:return self.camera.framing()[1]
+        return self.body_framing()[1]
+
+    def active_scene(self,width,height):
+        if self.selected_launch or self.mission or self.camera.name!='system':
+            return self.camera_cells(width,height)
+        return self.map_cells(width,height)
+
     def camera_cells(self,width,height):
-        earth=lookup('earth');moon=lookup('moon')
-        reference=self.position(earth)
-        center,bodies=self.map_system()
-        candidates=[earth,moon,*orbiters('Earth',self.date),center,*bodies,self.selected]
-        unique={b.name:b for b in candidates}
+        launch=self.selected_launch
+        if launch:
+            # The feed provides launch status, not coordinates. This is an unlocated
+            # identity marker, never a fabricated orbit or a different flight replay.
+            width,height=max(12,width),max(6,height)
+            cells=[[(' ',7,False) for _ in range(width)] for _ in range(height)]
+            def put(y,x,text,color=7):
+                for i,char in enumerate(text[:max(0,width-x)]):cells[y][x+i]=(char,color,True)
+            put(0,1,self.camera_label,6)
+            put(1,1,'Selected spacecraft',3)
+            put(round((height-1)/2),round((width-1)/2),'>',3)
+            put(min(height-3,round((height-1)/2)+1),1,launch.rocket,3)
+            put(height-2,1,'Position unavailable',8)
+            put(height-1,1,'No live position telemetry',8)
+            return cells
+        if self.mission:return self.mission.scene(width,height,self.camera)
+        target=self.orbit_focus or self.selected
+        reference=self.position(target)
+        children=[*satellites(target.name),*orbiters(target.name,self.date)]
+        parent=lookup(target.parent) if target.parent else None
+        neighbors=([parent,*satellites(parent.name),*orbiters(parent.name,self.date)]
+                   if parent and target.kind in ('Natural satellite','Artificial satellite') else [parent] if parent else [])
+        # Target last, with its physical radius, regardless of the current map's system.
+        unique={b.name:b for b in [*neighbors,*children,target] if b is not None}
         points=[];paths=[]
         for body in unique.values():
             if isinstance(body,Spacecraft) and (body.planned or body.insertion>self.date.strftime('%Y-%m-%d')):continue
             xyz=self.position(body)
             relative=tuple(a-b for a,b in zip(xyz,reference))
             points.append(Point(body.name,relative[0],relative[1],body.color,
-                                'O' if body is earth else '+' if isinstance(body,Spacecraft) else 'o',
-                                body.radius if body in (earth,moon) else 0))
+                                '+' if isinstance(body,Spacecraft) else 'O' if body is target else 'o',
+                                0 if isinstance(body,Spacecraft) else body.radius))
             if body is not SUN and self.trails:
                 path=self.orbit_path(body)
-                parent=self.position(lookup(body.parent))
-                paths.append([(p[0]+parent[0]-reference[0],p[1]+parent[1]-reference[1])
-                              for p in (path(i*math.tau/240) for i in range(240))])
-        target=self.position(self.orbit_focus or self.selected)
-        focus=(target[0]-reference[0],target[1]-reference[1])
-        return render_camera(width,height,self.camera,points,paths,focus)
+                primary=self.position(lookup(body.parent))
+                paths.append([(p[0]+primary[0]-reference[0],p[1]+primary[1]-reference[1])
+                              for p in (path(i*math.tau/240) for i in range(241))])
+        extent,label=self.body_framing()
+        return render_camera(width,height,self.camera,points,paths,(0.,0.),extent,label)
 
     def text_map(self, width=88, height=25):
         cells = self.map_cells(width, height)
         if self.camera.name!='system':
-            return ('CAMERA / '+self.camera.label+'\n'+self.status()+'\n\n'+
+            return ('CAMERA / '+self.camera_label+'\nFollowing: '+self.active_name+'\n'+self.status()+'\n\n'+
                     '\n'.join(''.join(c[0] for c in row) for row in cells)+
-                    '\n\nFixed kilometer scale; markers are enlarged. Earth/Moon use the simulation date.\n'
+                    '\n\nTarget-centered kilometer scale; markers are enlarged. Positions use the simulation date.\n'
                     'Spacecraft are illustrative. /camera system restores numbered orbit maps.')
         legend = "\n".join(f"  [{self.orbit_number(b,index)}] {b.name:<12} {distance:>18,.0f} km from parent / {source}" for index,b,distance,source in self.position_rows())
         return f"ORBIT MAP / {self.view} / {self.scale} spacing / enlarged markers\n{self.status()}\n\n" + "\n".join("".join(c[0] for c in row) for row in cells) + "\n\nNUMBERED ORBITS / brackets mark current positions\n" + legend + "\n\nPaths: current-state osculating ellipses when JPL is available; offline ellipses otherwise. /orbit inner /orbit jupiter /back"

@@ -59,7 +59,7 @@ def completions(line, sim=None):
     if command in ('/setting','/settings'):
         choices=list(THEMES)+['theme','exit','1','2','3','4','5']
     elif command=='/camera':
-        choices=['system','close','earth','high','moon','next','prev']
+        choices=['system','close','body','high','wide','earth','moon','next','prev']
     elif command=='/live':
         choices=['all','spacex','nasa','esa','status','refresh','watch','exit']
     elif command in ("/scale",):
@@ -165,8 +165,8 @@ def tui(screen, sim, no_color=False):
 
     def draw_orbits(h,w):
         if sim.camera.name!='system':
-            write(3,2,'CAMERA / '+sim.camera.label,6,True)
-            write(4,2,'Selected: '+sim.selected.name+' / Earth reference except Close follows selection',8)
+            write(3,2,'CAMERA / '+sim.camera_label,6,True)
+            write(4,2,'Following: '+sim.active_name,8)
             for y,row in enumerate(sim.camera_cells(w-4,max(6,h-12))):
                 for x,(char,color,bold) in enumerate(row):
                     if char!=' ':write(5+y,2+x,char,color,bold)
@@ -189,7 +189,7 @@ def tui(screen, sim, no_color=False):
             panes = [(2,pane_width,"inner"),(pane_width+4,pane_width,"outer")]
         for x,width,view in panes:
             pane_title = ("CERES" if view=="inner" else "OUTER DWARFS") if sim.dwarf_mode and view in ("inner","outer") else ("INNER PLANETS" if view=="inner" else "OUTER PLANETS" if view=="outer" else sim.view.upper())
-            write(4,x,sim.camera.label if sim.camera.name!='system' else pane_title+f" / {sim.scale} scale",6,True)
+            write(4,x,sim.camera_label if sim.camera.name!='system' else pane_title+f" / {sim.scale} scale",6,True)
             cells = sim.map_cells(width,map_height,view=view)
             for y,row in enumerate(cells):
                 for dx,(char,color,bold) in enumerate(row):
@@ -233,7 +233,7 @@ def tui(screen, sim, no_color=False):
             marker='>' if i==replay.index else '+' if i<replay.index else ' '
             write(start+offset,3,f'{marker} {event.date:%m-%d %H:%M}  {event.name}',3 if i==replay.index else 8,i==replay.index)
         write(h-7,2,'> spacecraft   O Earth   o Moon   c command module   + ISS',8)
-        write(h-6,2,'Camera: '+sim.camera.label+' / schematic route; approximate timing cues.',8)
+        write(h-6,2,'Following: '+replay.flight.name+' spacecraft / schematic route / '+sim.camera_label,8)
         write(h-5,2,'/pause /resume · /mission seek 50 · /mission restart · Esc /mission stop',8)
 
     response = WELCOME
@@ -314,7 +314,7 @@ def tui(screen, sim, no_color=False):
                 write(map_end+1+i,3,line,6 if title else 7,title)
             if sim.camera.name!='system' and sim.screen=='dashboard':
                 for y in range(3,map_end-1):write(y,0,' '*(w-1))
-                write(3,2,'CAMERA / '+sim.camera.label,6,True)
+                write(3,2,'Following: '+sim.active_name+' / '+sim.camera_label,6,True)
                 for y,row in enumerate(sim.camera_cells(w-4,max(6,map_end-6))):
                     for x,(char,color,bold) in enumerate(row):
                         if char!=' ':write(4+y,2+x,char,color,bold)
@@ -338,7 +338,7 @@ def tui(screen, sim, no_color=False):
                     panel=sim.live_text()
                 else:panel=sim.settings.text()
                 write(3,2,'SETTINGS / '+THEMES[sim.settings.theme][0] if sim.overlay=='settings' else 'LIVE LAUNCH MONITOR / actual UTC',6,True)
-                write(4,2,'Camera: '+sim.camera.label+' / Left & Right change view',8)
+                write(4,2,'Following: '+sim.active_name+' / '+sim.camera_label,8)
                 panel_width=w-6 if w<100 else int(w*.64)-5
                 wrapped=wrap_lines(panel,panel_width)
                 response_height=h-12
@@ -348,9 +348,9 @@ def tui(screen, sim, no_color=False):
                 if w>=100:
                     x=int(w*.64)+1
                     for y in range(5,h-6):write(y,x-1,'│',8)
-                    write(5,x,'Historical replay' if sim.mission else 'Orbit reference',8)
+                    write(5,x,'Selected spacecraft' if sim.selected_launch else 'Historical replay' if sim.mission else 'Orbit reference',8)
                     scene_height=max(6,min(18,h-12))
-                    scene=sim.mission.scene(w-x-2,scene_height,sim.camera) if sim.mission else sim.map_cells(w-x-2,scene_height)
+                    scene=sim.active_scene(w-x-2,scene_height)
                     for y,row in enumerate(scene):
                         for dx,(char,color,bold) in enumerate(row):
                             if char!=' ':write(6+y,x+dx,char,color,bold)
@@ -405,10 +405,10 @@ def tui(screen, sim, no_color=False):
             command = command[:cursor]+command[cursor+1:]
         elif key == curses.KEY_LEFT:
             sim.camera.cycle(-1)
-            feedback='Camera: '+sim.camera.label
+            feedback='Camera: '+sim.camera_label
         elif key == curses.KEY_RIGHT:
             sim.camera.cycle(1)
-            feedback='Camera: '+sim.camera.label
+            feedback='Camera: '+sim.camera_label
         elif key == '\x02':
             cursor = max(0,cursor-1)
         elif key == '\x06':
