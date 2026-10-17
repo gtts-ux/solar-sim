@@ -153,3 +153,17 @@ April 11 00:07 UTC. It flew around the Moon without orbit capture or landing.
 Mission routes, orbital turns, separation and spacecraft positions are
 schematic. Replay compression varies by stage to keep short events visible.
 No historical spacecraft state vectors or N-body flight dynamics are used.
+
+LIVE LAUNCH MONITOR / Launch Library 2.3.0
+https://thespacedevs.com/llapi
+https://github.com/TheSpaceDevs/Tutorials/blob/main/faqs/faq_LL2.md
+https://ll.thespacedevs.com/2.3.0/launches/
+https://ll.thespacedevs.com/2.3.0/launches/upcoming/
+https://ll.thespacedevs.com/2.3.0/config/launch_statuses/
+The production feed supplies statuses, UTC NET, agency, rocket, pad and
+webcast metadata. Development/stale lldev data is not used. Free access
+is 15 calls/hour/IP; normal refreshes use a 15-minute cache. Status ID 6
+is reported in flight. Countdown timing is not telemetry. NASA grouping
+uses provider/mission/program agencies; ESA/Europe also includes European
+Ariane/Vega operators, preserving provider names. Upcoming matches come
+from the next 100 global schedule entries. No synthetic live paths.

@@ -12,6 +12,7 @@ from missions import SPACECRAFT, Spacecraft
 from day_lengths import day_label
 from flight_replay import FLIGHTS
 from screensaver import show_screensaver
+from themes import THEMES
 
 WELCOME = f"""WELCOME TO YOUR OBSERVATORY
 
@@ -22,7 +23,8 @@ Explore the giants with /moons jupiter and /view saturn.
 
 The clock follows the actual current UTC time. /orbit opens full-screen orbits.
 Use /speed 3 to accelerate, /realtime to return to now, /sync status for JPL data.
-Tab completes commands; Up/Down recall history; Page Up/Down scroll results.
+Tab completes; Up/Down recalls history; Left/Right changes camera; Ctrl+B/F edits.
+Try /setting for five themes and /live for current launch status and webcasts.
 Full-screen: Enter on an empty line opens the Milky Way; Enter returns.
 
 JPL Horizons positions download in the background; offline fallbacks are labeled.
@@ -54,7 +56,13 @@ def completions(line, sim=None):
     prefix, _, fragment = line.rpartition(" ")
     command = line.split()[0].lower()
     choices = bodies
-    if command in ("/scale",):
+    if command in ('/setting','/settings'):
+        choices=list(THEMES)+['theme','exit','1','2','3','4','5']
+    elif command=='/camera':
+        choices=['system','close','earth','high','moon','next','prev']
+    elif command=='/live':
+        choices=['all','spacex','nasa','esa','status','refresh','watch','exit']
+    elif command in ("/scale",):
         choices = ["fit", "linear"]
     elif command in ("/labels", "/trails"):
         choices = ["on", "off"]
@@ -98,6 +106,10 @@ def plain_mode(sim, color):
     except ImportError:
         pass
     while sim.running:
+        if color:
+            # Basic ANSI fallback also reflects the selected theme in line mode.
+            foreground=THEMES[sim.settings.theme][2][5]
+            cyan=f'\033[{30+foreground}m'
         try:
             raw = input(f"{cyan}solar > {reset}")
         except (EOFError, KeyboardInterrupt):
@@ -116,6 +128,7 @@ def tui(screen, sim, no_color=False):
     except AttributeError:
         pass
     colors = False
+    theme_applied=None
     if not no_color and curses.has_colors():
         curses.start_color()
         try:
@@ -151,6 +164,15 @@ def tui(screen, sim, no_color=False):
             write(y,3," " + label + " ",6,True)
 
     def draw_orbits(h,w):
+        if sim.camera.name!='system':
+            write(3,2,'CAMERA / '+sim.camera.label,6,True)
+            write(4,2,'Selected: '+sim.selected.name+' / Earth reference except Close follows selection',8)
+            for y,row in enumerate(sim.camera_cells(w-4,max(6,h-12))):
+                for x,(char,color,bold) in enumerate(row):
+                    if char!=' ':write(5+y,2+x,char,color,bold)
+            write(h-6,2,'Enlarged markers; dotted limbs are size references. Spacecraft orbits are illustrative.',8)
+            write(h-5,2,'Left/Right camera / /camera system restores the original numbered orbit view',8)
+            return
         rows = sim.position_rows()
         legend_rows = (len(rows)+1)//2
         legend_start = h-5-max(1,legend_rows)
@@ -162,12 +184,12 @@ def tui(screen, sim, no_color=False):
         if sim.orbit_focus is None:
             write(3,27,"[number] = body / numbers on paths identify orbits",8)
         panes = [(2,w-4,sim.view)]
-        if sim.view == "solar" and w >= 108:
+        if sim.camera.name=='system' and sim.view == "solar" and w >= 108:
             pane_width = (w-6)//2
             panes = [(2,pane_width,"inner"),(pane_width+4,pane_width,"outer")]
         for x,width,view in panes:
             pane_title = ("CERES" if view=="inner" else "OUTER DWARFS") if sim.dwarf_mode and view in ("inner","outer") else ("INNER PLANETS" if view=="inner" else "OUTER PLANETS" if view=="outer" else sim.view.upper())
-            write(4,x,pane_title+f" / {sim.scale} scale",6,True)
+            write(4,x,sim.camera.label if sim.camera.name!='system' else pane_title+f" / {sim.scale} scale",6,True)
             cells = sim.map_cells(width,map_height,view=view)
             for y,row in enumerate(cells):
                 for dx,(char,color,bold) in enumerate(row):
@@ -199,7 +221,7 @@ def tui(screen, sim, no_color=False):
         write(7,2,'['+'='*done+'-'*(bar_width-done)+']',6)
         write(7,bar_width+6,f'{100*replay.elapsed/replay.duration:5.1f}%',7)
         scene_height=max(6,min(14,h-23))
-        for y,row in enumerate(replay.scene(w-4,scene_height)):
+        for y,row in enumerate(replay.scene(w-4,scene_height,sim.camera)):
             for x,(char,color,bold) in enumerate(row):
                 if char!=' ':
                     write(9+y,2+x,char,color,bold)
@@ -211,10 +233,11 @@ def tui(screen, sim, no_color=False):
             marker='>' if i==replay.index else '+' if i<replay.index else ' '
             write(start+offset,3,f'{marker} {event.date:%m-%d %H:%M}  {event.name}',3 if i==replay.index else 8,i==replay.index)
         write(h-7,2,'> spacecraft   O Earth   o Moon   c command module   + ISS',8)
-        write(h-6,2,'Schematic route; rounded/approximate cues; stage timing adjusted to keep events visible.',8)
+        write(h-6,2,'Camera: '+sim.camera.label+' / schematic route; approximate timing cues.',8)
         write(h-5,2,'/pause /resume · /mission seek 50 · /mission restart · Esc /mission stop',8)
 
     response = WELCOME
+    feedback=''
     command = ""
     cursor = 0
     history = []
@@ -223,6 +246,12 @@ def tui(screen, sim, no_color=False):
     scroll = 0
     while sim.running:
         sim.tick()
+        if colors and theme_applied!=sim.settings.theme:
+            _,rich,basic=THEMES[sim.settings.theme]
+            palette=rich if curses.COLORS>=256 else basic
+            for index,color in enumerate(palette,1):curses.init_pair(index,color,background)
+            theme_applied=sim.settings.theme
+            screen.clear()
         screen.erase()
         h,w = screen.getmaxyx()
         if h < 22 or w < 64:
@@ -283,6 +312,12 @@ def tui(screen, sim, no_color=False):
             for i,line in enumerate(wrapped[scroll:scroll+response_height]):
                 title = bool(line and not line.startswith(" ") and line.upper() == line)
                 write(map_end+1+i,3,line,6 if title else 7,title)
+            if sim.camera.name!='system' and sim.screen=='dashboard':
+                for y in range(3,map_end-1):write(y,0,' '*(w-1))
+                write(3,2,'CAMERA / '+sim.camera.label,6,True)
+                for y,row in enumerate(sim.camera_cells(w-4,max(6,map_end-6))):
+                    for x,(char,color,bold) in enumerate(row):
+                        if char!=' ':write(4+y,2+x,char,color,bold)
             if len(wrapped) > response_height:
                 write(h-5,3,f"{scroll+1}–{min(scroll+response_height,len(wrapped))} of {len(wrapped)} lines · Page Up / Page Down",8)
             else:
@@ -296,6 +331,31 @@ def tui(screen, sim, no_color=False):
                 for y in range(3,h-4):
                     write(y,0,' '*(w-1))
                 draw_mission(h,w)
+            if sim.overlay in ('settings','live'):
+                for y in range(3,h-4):write(y,0,' '*(w-1))
+                if sim.overlay=='live':
+                    sim.launches.request()
+                    panel=sim.live_text()
+                else:panel=sim.settings.text()
+                write(3,2,'SETTINGS / '+THEMES[sim.settings.theme][0] if sim.overlay=='settings' else 'LIVE LAUNCH MONITOR / actual UTC',6,True)
+                write(4,2,'Camera: '+sim.camera.label+' / Left & Right change view',8)
+                panel_width=w-6 if w<100 else int(w*.64)-5
+                wrapped=wrap_lines(panel,panel_width)
+                response_height=h-12
+                scroll=min(max(0,scroll),max(0,len(wrapped)-response_height))
+                for i,line in enumerate(wrapped[scroll:scroll+response_height]):
+                    write(6+i,3,line,6 if i==0 else 7)
+                if w>=100:
+                    x=int(w*.64)+1
+                    for y in range(5,h-6):write(y,x-1,'│',8)
+                    write(5,x,'Historical replay' if sim.mission else 'Orbit reference',8)
+                    scene_height=max(6,min(18,h-12))
+                    scene=sim.mission.scene(w-x-2,scene_height,sim.camera) if sim.mission else sim.map_cells(w-x-2,scene_height)
+                    for y,row in enumerate(scene):
+                        for dx,(char,color,bold) in enumerate(row):
+                            if char!=' ':write(6+y,x+dx,char,color,bold)
+                write(h-6,2,f'{scroll+1}-{min(len(wrapped),scroll+response_height)} of {len(wrapped)} / PgUp/PgDn scroll / Esc returns',8)
+                write(h-5,2,feedback,3)
             rule(h-4)
             write(h-3,2,"›",6,True)
             available = w-8
@@ -303,7 +363,7 @@ def tui(screen, sim, no_color=False):
             write(h-3,4,command[start:start+available])
             if not command:
                 write(h-3,4,"Type a slash command…",8)
-            write(h-2,2,"Enter empty: galaxy  Tab complete  ↑↓ history  Esc overview  Ctrl+C exit",8)
+            write(h-2,2,f'←/→ camera:{sim.camera.name}  Ctrl+B/F edit  Enter empty:galaxy  /setting /live',8)
             try:
                 curses.curs_set(1)
                 screen.move(h-3,4+cursor-start)
@@ -318,6 +378,10 @@ def tui(screen, sim, no_color=False):
         if key in ("\x03","\x04"):
             sim.running = False
         elif key == "\x1b":
+            if sim.overlay:
+                sim.overlay=None
+                scroll=0
+                continue
             sim.stop_mission()
             sim.screen = "dashboard"
             sim.orbit_focus = None
@@ -327,6 +391,7 @@ def tui(screen, sim, no_color=False):
                 history.append(command)
                 history = history[-300:]
                 response = sim.command(command)
+                feedback=response.splitlines()[0] if response else ''
                 scroll = 0
             else:
                 show_screensaver(screen,sim,colors)
@@ -339,8 +404,14 @@ def tui(screen, sim, no_color=False):
         elif key == curses.KEY_DC:
             command = command[:cursor]+command[cursor+1:]
         elif key == curses.KEY_LEFT:
-            cursor = max(0,cursor-1)
+            sim.camera.cycle(-1)
+            feedback='Camera: '+sim.camera.label
         elif key == curses.KEY_RIGHT:
+            sim.camera.cycle(1)
+            feedback='Camera: '+sim.camera.label
+        elif key == '\x02':
+            cursor = max(0,cursor-1)
+        elif key == '\x06':
             cursor = min(len(command),cursor+1)
         elif key in (curses.KEY_HOME,"\x01"):
             cursor = 0
@@ -396,6 +467,9 @@ def main():
             if command.strip() == "/sync" and sim.ephemeris.thread is not None:
                 sim.ephemeris.thread.join()
                 print(sim.ephemeris.details())
+            if command.strip().split()[:1]==['/live'] and sim.launches.thread is not None:
+                sim.launches.thread.join(timeout=30)
+                print(sim.live_text())
             if not sim.running:
                 break
         return 0
@@ -419,6 +493,7 @@ def main():
         plain_mode(sim,not no_color)
     print("Observatory closed. Clear skies!")
     sim.ephemeris.cancel.set()
+    sim.launches.cancel.set()
     return 0
 
 

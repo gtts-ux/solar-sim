@@ -39,6 +39,10 @@ jobs:
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
       - name: Test before packaging
         run: python -m unittest -v
+      - name: Probe optional live launch service
+        timeout-minutes: 1
+        continue-on-error: true
+        run: python solar_sim.py --offline -c '/live'
       - name: Build source download and checksum
         run: python tools/build_release.py
       - name: Publish ZIP and checksum

@@ -2,6 +2,7 @@
 import math
 import random
 import time
+from themes import galaxy_palette
 
 # Four eight-step ramps: blue arms, violet arms, amber bulge and white stars.
 PALETTE = (17,18,24,25,32,39,75,117,
@@ -35,7 +36,7 @@ class Galaxy:
                                    rng.gauss(0,.035),1,.39))
         self.stars=[(rng.random(),rng.random(),rng.random()*math.tau,rng.random()) for _ in range(260)]
 
-    def frame(self,width,height,seconds):
+    def frame(self,width,height,seconds,zoom=1):
         """Return rows of (glyph, palette index, bold), with no interface overlay."""
         if width<=0 or height<=0:
             return []
@@ -49,7 +50,7 @@ class Galaxy:
         tilt=.53+.035*math.sin(seconds*.09)
         sky=-.27+.025*math.sin(seconds*.06)
         cs,ss=math.cos(sky),math.sin(sky)
-        scale=min(width*.80,height*4*.86)
+        scale=min(width*.80,height*4*.86)*zoom
         cx,cy=width,height*2
         xx=(ca*cs-sa*tilt*ss)*scale
         xy=(-sa*cs-ca*tilt*ss)*scale
@@ -91,9 +92,9 @@ class Galaxy:
             cells[y][x]=(glyph,24+level,level>=6)
         return cells
 
-    def runs(self,width,height,seconds):
+    def runs(self,width,height,seconds,zoom=1):
         """Group equal-color neighboring cells to keep terminal output small."""
-        for y,row in enumerate(self.frame(width,height,seconds)):
+        for y,row in enumerate(self.frame(width,height,seconds,zoom)):
             x=0
             while x<len(row):
                 glyph,color,bold=row[x]
@@ -113,9 +114,11 @@ def show_screensaver(screen,sim,colors=False):
     """Temporarily own the display and preserve the caller's complete UI state."""
     import curses
     galaxy=Galaxy()
+    theme=getattr(getattr(sim,'settings',None),'theme','cosmic')
+    palette=galaxy_palette(theme)
     extended=colors and curses.COLORS>=256 and curses.COLOR_PAIRS>len(PALETTE)+9
     if extended:
-        for index,color in enumerate(PALETTE):
+        for index,color in enumerate(palette):
             curses.init_pair(9+index,color,curses.COLOR_BLACK)
     previous_background=screen.getbkgd()
     sim.tick()
@@ -137,7 +140,8 @@ def show_screensaver(screen,sim,colors=False):
             if now>=deadline:
                 height,width=screen.getmaxyx()
                 screen.erase()
-                for y,x,text,color,bold in galaxy.runs(max(0,width-1),height,now-started):
+                zoom=(1,.70,.90,1.12,1.35)[getattr(getattr(sim,'camera',None),'index',0)]
+                for y,x,text,color,bold in galaxy.runs(max(0,width-1),height,now-started,zoom=zoom):
                     style=0
                     if colors:
                         style=curses.color_pair(9+color if extended else (4,5,3,7)[color//8])
@@ -159,6 +163,8 @@ def show_screensaver(screen,sim,colors=False):
                 continue
             if key in ('\n','\r',curses.KEY_ENTER,'\x1b'):
                 break
+            if key in (getattr(curses,'KEY_LEFT',-10),getattr(curses,'KEY_RIGHT',-11)) and hasattr(sim,'camera'):
+                sim.camera.cycle(-1 if key==getattr(curses,'KEY_LEFT',-10) else 1)
             if key in ('\x03','\x04'):
                 sim.running=False
     finally:

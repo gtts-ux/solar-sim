@@ -13,6 +13,9 @@ from ephemeris import Ephemeris
 from missions import SPACECRAFT, Spacecraft, mission_profile, orbiters
 from day_lengths import day_info, day_label
 from flight_replay import Playback, catalogue as flight_catalogue, find_flight, flight_info, parse_request
+from themes import Settings, THEMES
+from camera import Camera, Point, render as render_camera
+from live_launches import LaunchFeed, SOURCE as LAUNCH_SOURCE, countdown, launch_detail, date as launch_date, https_url
 
 UTC = timezone.utc
 EPOCH = datetime(2000, 1, 1, 12, tzinfo=UTC)
@@ -44,6 +47,11 @@ HELP = """EXPLORE
   /weight 70 mars         Weight for a mass in kg, in newtons and Earth kg-equivalent
   /distance earth mars    Approximate center-to-center distance at simulation time
   /random                 Discover a random body
+  /setting                Five themes; /setting theme amber changes and saves
+  /camera moon            Camera: system, close, earth, high, moon, next, prev
+  /live                   Current and upcoming NASA, ESA/European and SpaceX launches
+  /live NUMBER            Launch details; /live watch NUMBER opens a webcast
+  /live refresh           Refresh when allowed; /live exit returns
 
 SIMULATE
   /orbit [solar|inner|outer|NAME]  Full-screen numbered orbit view
@@ -78,7 +86,9 @@ APP
 KEYS (full-screen mode)
   Enter on an empty command opens the Milky Way screensaver; Enter returns.
   The simulation pauses during the screensaver and resumes its previous state.
-  Tab completes names/commands. Up/Down recall commands. Left/Right edit.
+  Left/Right changes camera: system, close, Earth, high Earth orbit, Moon range.
+  Ctrl+B/F moves the input cursor; Home/End still edit the command line.
+  Tab completes names/commands. Up/Down recall commands.
   Page Up/Down scroll responses. Ctrl+U clears input. Ctrl+C or Ctrl+D exits.
   Resize the terminal at any time. A larger window shows more detail.
 
@@ -154,6 +164,22 @@ follows its own stages; lunar flybys do not acquire a landing phase.
 Completion or /mission stop leaves the clock paused at the historical date.
 /now returns to current time. Full-screen mode animates; plain mode and -c
 provide text snapshots, with /mission status or seek to inspect progress.
+
+THEMES, CAMERAS AND LIVE LAUNCHES
+/setting lists five persistent themes: Cosmic, Amber, Ocean, Forest and Mono.
+/setting theme amber applies one immediately. --no-color overrides colors.
+Left/Right cycles system/close/Earth/high-Earth-orbit/Moon-range cameras.
+Ctrl+B/F edits input. Fixed camera scales use kilometers and enlarged markers;
+mission geometry remains an illustration. Camera/theme changes do not stop missions.
+/live explicitly fetches launch status from The Space Devs Launch Library 2.
+It shows reported in-flight launches plus matches from the next 100 upcoming
+global records; NASA, SpaceX and ESA/European-related launches are included.
+Actual operator labels are preserved. Status, UTC countdowns and webcast links
+are supplied; spacecraft positions and flight paths are not live telemetry.
+The feed is independent of the simulation date, caches for 15 minutes, and
+labels stale or failed updates unverified. /live refresh respects the cache.
+/live watch NUMBER opens a supplied HTTPS webcast in the default browser.
+settings.json and launch_cache.json stay local and are excluded from downloads.
 
 DISPLAY
 The dashboard shows distances and position sources. /orbit opens a full-screen
@@ -328,12 +354,21 @@ COMMANDS = ["mission", "missions", "day", "satellites", "satellite", "dwarf", "m
             "now", "reset", "scale", "labels", "trails", "export", "info", "sources", "help", "clear", "quit", "exit"]
 
 
+COMMANDS = ['setting','settings','camera','live'] + COMMANDS
+
+
 class Simulation:
-    def __init__(self, online=False):
+    def __init__(self, online=False, settings_path=None, launch_cache_path=None):
         self.ephemeris = Ephemeris(online=online)
+        self.settings=Settings(settings_path or ROOT/'settings.json')
+        self.launches=LaunchFeed(launch_cache_path or ROOT/'launch_cache.json')
         self.reset()
 
     def reset(self):
+        self.camera=Camera()
+        self.overlay=None
+        self.live_filter='all'
+        self.live_selection=None
         self.mission = None
         self.date = datetime.now(UTC)
         self.speed = 1 / 86400
@@ -485,10 +520,61 @@ class Simulation:
             return f"File operation failed: {error}"
 
     def _command(self, raw):
+        if self.overlay in ('settings','live') and raw.strip().isdigit():
+            raw=('/setting ' if self.overlay=='settings' else '/live ')+raw.strip()
         parts = shlex.split(raw.strip().lstrip("/"))
         if not parts:
             return "Type /planet to explore or /help for all commands."
         cmd, args = parts[0].lower(), parts[1:]
+        if cmd in ('setting','settings'):
+            if len(args)==1 and args[0].lower()=='exit':
+                self.overlay=None
+                return self.status()
+            if args:
+                choice=args[1].lower() if len(args)==2 and args[0].lower()=='theme' else args[0].lower() if len(args)==1 else ''
+                if choice in ('1','2','3','4','5'):choice=list(THEMES)[int(choice)-1]
+                self.settings.set_theme(choice)
+            else:self.overlay='settings'
+            return self.settings.text()
+        if cmd=='camera':
+            if len(args)>1:raise ValueError('Usage: /camera moon or /camera next')
+            if args:
+                name=args[0].lower()
+                if name in ('next','prev'):self.camera.cycle(1 if name=='next' else -1)
+                else:self.camera.select(name)
+            return 'CAMERA / '+self.camera.label+'\n\nLeft/Right cycles camera scales in every full-screen view.\nClose follows the selected body or mission spacecraft. Earth/high/moon center Earth.\nMission geometry remains schematic. /camera system restores automatic framing.'
+        if cmd=='live':
+            if len(args)==1 and args[0].lower()=='exit':
+                self.overlay=None
+                return self.status()
+            self.overlay='live'
+            if len(args)==1 and args[0].lower()=='status':return self.live_text()
+            self.launches.request()
+            if args and args[0].lower() in ('all','spacex','nasa','esa') and len(args)==1:
+                self.live_filter=args[0].lower();self.live_selection=None
+            elif args and args[0].lower()=='refresh' and len(args)==1:
+                pass
+            elif args:
+                watch=args[0].lower()=='watch'
+                launch_number=args[1] if watch and len(args)==2 else args[0] if len(args)==1 else ''
+                entries=self.live_entries
+                if not launch_number.isdigit() or not 1<=int(launch_number)<=len(entries):
+                    return 'Choose a number from /live after the feed finishes loading.\n'+self.live_text()
+                launch=entries[int(launch_number)-1]
+                self.live_selection=launch.id
+                if watch:
+                    url=next((https_url(link) for link in launch.webcasts if https_url(link)),'')
+                    if not url:return 'No webcast link has been announced for this launch.'
+                    import webbrowser
+                    opened=webbrowser.open(url)
+                    return ('Opened webcast: ' if opened else 'Open this webcast link: ')+url
+            else:self.live_selection=None
+            return self.live_text()
+        if cmd=='back' and self.overlay:
+            self.overlay=None
+            return self.status()
+        if cmd not in ('pause','resume','time','export'):
+            self.overlay=None
         if cmd in ("mission","missions"):
             if not args or args==["list"] or cmd=="missions":
                 self.stop_mission()
@@ -847,6 +933,7 @@ class Simulation:
 
     def map_cells(self, width, height, view=None):
         """Map cells contain (character, curses color, bold), ready for either renderer."""
+        if self.camera.name!='system':return self.camera_cells(width,height)
         width, height = max(12, width), max(6, height)
         cells = [[(" ", 7, False) for _ in range(width)] for _ in range(height)]
         center, bodies = self.map_system(view)
@@ -922,7 +1009,64 @@ class Simulation:
             put(max(0,cx-len(message)/2),min(height-1,cy+2),message,3,True)
         return cells
 
+    @property
+    def live_entries(self):
+        rows,_,_,_=self.launches.snapshot()
+        return tuple(r for r in rows if self.live_filter=='all' or self.live_filter in r.groups)
+
+    def live_text(self):
+        entries=self.live_entries
+        selected=next((r for r in entries if r.id==self.live_selection),None)
+        lines=['LIVE LAUNCH MONITOR / actual UTC, independent of simulation date',self.launches.label(),'']
+        if selected:
+            lines += [launch_detail(selected),'','/live returns to the list. /live watch NUMBER opens a supplied webcast.']
+        else:
+            active=sum(r.in_flight for r in entries)
+            lines += [f'{active} reported IN FLIGHT / {len(entries)-active} scheduled or on hold',
+                      'Upcoming matches are selected from the next 100 global launches.','']
+            if not entries:
+                lines.append('No matching launches in the fetched data.' if self.launches.updated else 'Waiting for the launch feed; /live status shows progress.')
+            for i,launch in enumerate(entries,1):
+                state='IN FLIGHT' if launch.in_flight else launch.status
+                net=launch_date(launch.net)
+                when=f'{net:%Y-%m-%d %H:%M} UTC' if net else 'Date TBD'
+                lines += [f'{i}. {launch.name} - {launch.provider}',f'   [{state}] {when} / {countdown(launch)}']
+            lines += ['',f'Source: {LAUNCH_SOURCE}',
+                      '/live NUMBER details  /live watch NUMBER webcast  /live refresh',
+                      '/live spacex | nasa | esa | all filters  /live exit returns',
+                      'ESA includes European Ariane/Vega providers; actual operator is shown.',
+                      'Status/countdown/webcast links only; no live spacecraft trajectory.']
+        return '\n'.join(lines)
+
+    def camera_cells(self,width,height):
+        earth=lookup('earth');moon=lookup('moon')
+        reference=self.position(earth)
+        center,bodies=self.map_system()
+        candidates=[earth,moon,*orbiters('Earth',self.date),center,*bodies,self.selected]
+        unique={b.name:b for b in candidates}
+        points=[];paths=[]
+        for body in unique.values():
+            if isinstance(body,Spacecraft) and (body.planned or body.insertion>self.date.strftime('%Y-%m-%d')):continue
+            xyz=self.position(body)
+            relative=tuple(a-b for a,b in zip(xyz,reference))
+            points.append(Point(body.name,relative[0],relative[1],body.color,
+                                'O' if body is earth else '+' if isinstance(body,Spacecraft) else 'o',
+                                body.radius if body in (earth,moon) else 0))
+            if body is not SUN and self.trails:
+                path=self.orbit_path(body)
+                parent=self.position(lookup(body.parent))
+                paths.append([(p[0]+parent[0]-reference[0],p[1]+parent[1]-reference[1])
+                              for p in (path(i*math.tau/240) for i in range(240))])
+        target=self.position(self.orbit_focus or self.selected)
+        focus=(target[0]-reference[0],target[1]-reference[1])
+        return render_camera(width,height,self.camera,points,paths,focus)
+
     def text_map(self, width=88, height=25):
         cells = self.map_cells(width, height)
+        if self.camera.name!='system':
+            return ('CAMERA / '+self.camera.label+'\n'+self.status()+'\n\n'+
+                    '\n'.join(''.join(c[0] for c in row) for row in cells)+
+                    '\n\nFixed kilometer scale; markers are enlarged. Earth/Moon use the simulation date.\n'
+                    'Spacecraft are illustrative. /camera system restores numbered orbit maps.')
         legend = "\n".join(f"  [{self.orbit_number(b,index)}] {b.name:<12} {distance:>18,.0f} km from parent / {source}" for index,b,distance,source in self.position_rows())
         return f"ORBIT MAP / {self.view} / {self.scale} spacing / enlarged markers\n{self.status()}\n\n" + "\n".join("".join(c[0] for c in row) for row in cells) + "\n\nNUMBERED ORBITS / brackets mark current positions\n" + legend + "\n\nPaths: current-state osculating ellipses when JPL is available; offline ellipses otherwise. /orbit inner /orbit jupiter /back"

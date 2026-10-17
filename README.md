@@ -50,6 +50,14 @@ Use a terminal at least **64 columns × 22 rows**; about 120 × 40 is more comfo
 
 In orbit mode, a body name focuses that body's orbit. `/moons jupiter` opens all included Jupiter moon orbits. Dwarf planets have a separate catalogue.
 
+**Five themes:** `/setting` lists Cosmic, Amber, Ocean, Forest and Mono. Use `/setting theme amber` or `/setting 2` to apply and save one immediately. The screensaver follows the theme. `/setting exit` or Esc closes the panel without stopping a mission.
+
+**Camera controls:** Left/Right cycles **System → Close (10 km) → Earth (15,000 km) → High Earth orbit (60,000 km) → Moon range (480,000 km)** in every full-screen view, including missions and the launch/settings panels. Close follows the selection or replay spacecraft; other fixed scales center Earth. `/camera moon` chooses a scale and `/camera system` restores automatic framing. Ctrl+B/F now edits the command-line cursor; Home/End still work. Screensaver arrows change galaxy framing too.
+
+**Launch monitor:** `/live` fetches reported in-flight launches and upcoming NASA, SpaceX and ESA/European-related launches from [The Space Devs Launch Library 2](https://thespacedevs.com/llapi). The numbered list shows actual operator, source status and scheduled UTC. `/live 1` shows details; `/live watch 1` opens a supplied HTTPS webcast. Filter with `/live nasa`, `/live spacex` or `/live esa`; `/live all` restores all groups and `/live exit` returns. Arianespace/Avio/Ariane/Vega are included in the European group and retain their actual operator labels.
+
+The monitor uses actual UTC even during a historical mission. Countdown passing zero never makes a launch "in flight" automatically. It provides status, countdowns and webcast links rather than spacecraft coordinates; the separate orbit/replay preview uses simulation data. Updates run in the background, normally at most once per 15 minutes to fit the public API quota. `/live refresh` respects that interval. Cached data retains its fetched timestamp; failures or stale data are marked unverified. Upcoming matches are selected from the next 100 global schedule entries. `/live` and `/sync` are explicit network requests even with `--offline`. In plain mode submit `/live` again to see a completed update; `-c '/live'` waits up to 30 seconds for its snapshot.
+
 **Milky Way screensaver:** press **Enter on an empty command line** in full-screen mode. The whole interface disappears into a smoothly rotating galaxy with blue/violet spiral arms, a warm core and a subtle starfield. Press **Enter again** to return to the same view. The simulation and any mission playback pause while it is open, then resume their previous state. Esc also returns. Colors adapt to the terminal; `--no-color` stays monochrome. This artistic animation requires no extra packages and is not an astronomical galaxy model.
 
 Mission playback jumps to the historical launch date and reaches return in the duration you choose. Use `/pause`, `/resume`, `/mission seek 50`, `/mission restart` and `/mission stop`. **Esc** returns to the overview. **Tab** completes commands and names. Mission animation requires full-screen mode; plain mode and `-c` show text snapshots.
@@ -61,6 +69,8 @@ Included flights: Apollo 8, 11, 13 and 17; Artemis I and II; SpaceX Demo-2 and C
 The app can retrieve current planetary and moon state vectors from NASA/JPL Horizons, with labeled offline fallbacks. It includes selected major moons and spacecraft rather than every satellite. Artificial-satellite positions and mission replay routes are illustrative, not live tracking. Historical replay milestones are rounded, some transitions are approximate, and time compression varies by stage. Solar days are approximate means rather than local daylight duration.
 
 Internet access is optional. Cache and exported snapshots are stored inside the extracted folder, so keep it somewhere you can write to. Python 3.10+ and its standard library are the only runtime requirements. Full-screen mode uses curses, normally included with macOS/Linux Python.
+
+Local `settings.json` and `launch_cache.json` files are ignored by Git and omitted from downloads.
 
 See [README.txt](README.txt) for the full command guide and [SOURCES.txt](SOURCES.txt) for astronomy references.
 

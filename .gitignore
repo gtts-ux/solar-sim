@@ -7,6 +7,10 @@ venv/
 # Local astronomy data and exported snapshots
 ephemeris_cache.json
 ephemeris_cache.*.tmp
+launch_cache.json
+launch_cache.json.*.tmp
+settings.json
+settings.json.*.tmp
 exports/
 
 # Generated downloads

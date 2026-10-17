@@ -290,7 +290,10 @@ class Playback:
                 'Schematic route; intermediate timing cues are approximate. Time compression varies by stage.\n'
                 '/pause /resume /mission seek 50 /mission restart /mission stop')
 
-    def scene(self,width,height):
+    def scene(self,width,height,camera=None):
+        if camera is not None and camera.name!='system':
+            from camera import mission_scene
+            return mission_scene(self,width,height,camera)
         width,height=max(24,width),max(6,height)
         cells=[[(' ',7,False) for _ in range(width)] for _ in range(height)]
         ex,ey=(width*.2 if self.flight.lunar else width*.47),height*.55

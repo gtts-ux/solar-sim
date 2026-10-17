@@ -133,7 +133,8 @@ KEYBOARD
     Enter in screensaver    Return to exactly the previous view
     Tab                     Complete a command or a body name
     Up / Down               Recall this session's command history
-    Left / Right            Move input cursor
+    Left / Right            Cycle camera in every full-screen view
+    Ctrl+B / Ctrl+F         Move input cursor
     Home / End              Start / end of input (Ctrl+A / Ctrl+E too)
     Backspace / Delete      Edit input
     Ctrl+U                  Clear input
@@ -286,6 +287,10 @@ FILES
     catalog.py                Body data and JPL orbital coefficients
     missions.py               Spacecraft catalogue, status and mission profiles
     screensaver.py            Smooth colored Milky Way animation
+    themes.py                 Five themes and local preferences
+    camera.py                 Shared orbit/replay camera scales
+    live_launches.py          Background launch status and webcast links
+    test_controls.py          Theme, camera and launch feed checks
     test_screensaver.py       Galaxy rendering and view/clock restoration checks
     flight_replay.py          Ten flight timelines, playback clock and routes
     day_lengths.py            Mean solar-day and sidereal-rotation calculations
@@ -305,9 +310,10 @@ https://www.python.org/downloads/ and reopen Terminal.
 If full-screen graphics are garbled, try Terminal.app with a UTF-8
 locale, enlarge the window, or use --plain. --no-color disables colors.
 See README.md for macOS, Linux and Windows startup instructions.
-The app does not read personal files. It contacts only the public NASA/JPL
-Horizons API to retrieve astronomy data. --offline disables automatic
-requests; /sync explicitly enables them. Cache and export files stay in
+The app reads its own settings, cache and project data. It uses NASA/JPL
+Horizons for astronomy data and The Space Devs Launch Library 2 on /live.
+--offline disables automatic JPL requests; /sync and /live explicitly
+request network data. Cache and export files stay in
 this folder. /export writes only into its exports directory. To remove the app,
 delete this folder.
 
@@ -506,7 +512,7 @@ In full-screen mode, press Enter on a blank command line (spaces count as
 blank). The whole interface disappears and a colored spiral galaxy rotates
 against a quiet starfield. Press Enter again to return to the same view,
 response, selection and command history. Esc also returns; Ctrl+C or Ctrl+D
-exits the app. Other keys are ignored while the screensaver is open.
+exits the app. Left/Right changes galaxy framing; other keys are ignored.
 
 The animation uses a separate real-time clock and targets 30 frames per
 second, using Unicode braille for subcell detail. It uses blue/violet arms,
@@ -519,3 +525,53 @@ visible. Returning restores the earlier pause/resume state without skipping
 mission stages. The galaxy is an artistic animation, not an astronomical
 Milky Way model. It is available in the full-screen interface, not --plain
 or one-shot -c output. No packages, images or downloads are needed.
+
+THEMES, CAMERAS AND LIVE LAUNCHES
+
+/setting lists Cosmic, Amber, Ocean, Forest and Mono. /setting theme amber
+or /setting 2 applies and saves a theme immediately in settings.json.
+It colors the interface and screensaver. --no-color and NO_COLOR override
+colors. /setting exit or Esc returns without stopping a mission.
+
+Left/Right changes cameras in every full-screen view, including missions:
+System (automatic), Close (10 km), Earth (15,000 km), High Earth orbit
+(60,000 km), Moon range (480,000 km). /camera close, /camera earth,
+/camera high, /camera moon or /camera system selects a scale directly.
+Close follows the selection or replay spacecraft; other fixed scales
+center Earth. These are fixed kilometer scales with enlarged markers and
+dotted limb references. Replay geometry remains schematic. Ctrl+B/F or
+Home/End edits input. Screensaver arrows also change galaxy framing.
+
+/live requests actual launch status from The Space Devs Launch Library 2.
+Reported in-flight launches appear first, followed by matches from the
+next 100 upcoming global records. NASA, SpaceX and ESA/European-related
+launches are included; Arianespace/Avio/Ariane/Vega retain their actual
+operator labels. In-flight results follow pagination separately.
+
+    /live                   Open the numbered launch list
+    /live 1                 Launch details, rocket, pad, NET and webcast links
+    /live watch 1           Open a supplied HTTPS webcast in your browser
+    /live spacex            Filter to SpaceX-related launches
+    /live nasa              Filter to NASA-related launches
+    /live esa               Filter to ESA/European-related launches
+    /live all               Restore all included groups
+    /live refresh           Refresh when the cache permits
+    /live status            Cached data/progress without a new request
+    /live exit              Restore the previous view
+
+The feed uses actual UTC even during historical playback. Countdown zero
+never fabricates liftoff: it says awaiting provider confirmation. The
+monitor provides status, countdowns and links, not spacecraft telemetry
+or live flight trajectories. The orbit/replay preview is separate.
+
+The free provider budget is 15 requests/hour/IP. The app normally caches
+for 15 minutes, with a rolling request budget and Retry-After handling.
+/live refresh respects that interval. It shows fetched UTC and next refresh
+time. Failed or stale updates retain cache and are labeled unverified.
+No sample launches are substituted. launch_cache.json stores local data.
+
+Live data needs internet. /live, like /sync, explicitly requests network
+data even with --offline. The provider is not contacted until /live is
+requested. Plain mode prints snapshots: submit /live again after the
+background fetch finishes. -c '/live' waits up to 30 seconds for a snapshot.
+settings.json and launch_cache.json are excluded from Git and ZIP builds.
