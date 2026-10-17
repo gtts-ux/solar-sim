@@ -24,9 +24,10 @@ Explore the giants with /moons jupiter and /view saturn.
 
 The clock follows the actual current UTC time. /orbit opens full-screen orbits.
 Use /speed 3 to accelerate, /realtime to return to now, /sync status for JPL data.
-Tab on empty input or F2 opens the arrow menu; /menu works too.
+Arrows on empty input open navigation. /setting opens themes and screensavers.
+Tab on empty input or F2 also opens the arrow menu; /menu works too.
 In the menu: arrows navigate, Enter opens, Esc goes back. Tab completes commands.
-Outside the menu: Up/Down history; Left/Right camera; Ctrl+B/F edits.
+In orbit mode only: Left/Right camera. Ctrl+P/N history; arrows edit typed text.
 Try /setting for themes and screensavers; /live for launch status and webcasts.
 Full-screen: Enter on an empty line opens your screensaver; Enter returns.
 
@@ -244,7 +245,9 @@ def tui(screen, sim, no_color=False):
         for y in range(3,h-4):
             write(y,0,' '*(w-1))
         write(3,2,'ARROW NAVIGATION',6,True)
-        write(4,2,'Left/Right: section   Up/Down: choose   Enter: open',8)
+        settings_section=navigation.sections[navigation.section]=='Settings'
+        write(4,2,('Theme / '+THEMES[sim.settings.theme][0]+'   SCREENSAVER / '+SCREENSAVERS[sim.settings.screensaver]) if settings_section else
+              'Left/Right: section   Up/Down: choose   Enter: open',8)
         divider=18
         for i,label in enumerate(navigation.sections):
             write(6+i,2,('> ' if i==navigation.section else '  ')+label,6 if i==navigation.section else 8,i==navigation.section)
@@ -269,7 +272,8 @@ def tui(screen, sim, no_color=False):
         if selected:
             for i,line in enumerate(wrap_lines(selected.detail,w-6)[:2]):
                 write(h-7+i,2,line,7)
-        write(h-5,2,navigation.feedback or 'Esc: back / close   F2: close   /: type a command',3 if navigation.feedback else 8)
+        hint='Enter: apply / preview saver   Space: preview saved' if settings_section else 'Esc: back / close   F2: close   /: type a command'
+        write(h-5,2,navigation.feedback or hint,3 if navigation.feedback else 8)
 
     navigation=Navigation()
     response = WELCOME
@@ -405,7 +409,8 @@ def tui(screen, sim, no_color=False):
             else:
                 write(h-3,4,command[start:start+available])
             write(h-2,2,'←/→ section  ↑/↓ item  Enter open  Esc back  F2 close' if navigation.opened else
-                  f'Tab empty/F2 menu  ←/→ camera:{sim.camera.name}  ↑/↓ history  Enter empty:saver',8)
+                  f'←/→ orbit camera:{sim.camera.name}  ↑/↓ browse  Ctrl+P/N history' if sim.screen=='orbit' and not sim.overlay else
+                  'Arrows browse  Tab/F2 menu  Ctrl+P/N history  Enter empty:saver',8)
             try:
                 curses.curs_set(0 if navigation.opened else 1)
                 if not navigation.opened:
@@ -422,9 +427,20 @@ def tui(screen, sim, no_color=False):
             sim.running = False
         elif key == curses.KEY_F2 or (key=='\t' and not command.strip() and not navigation.opened):
             navigation.toggle()
+            if not navigation.opened and sim.overlay=='settings':sim.overlay=None
+        elif key in ('\x10','\x0e'):
+            navigation.opened=False
+            if key=='\x10' and history:
+                if history_index==len(history):draft=command
+                history_index=max(0,history_index-1)
+            elif key=='\x0e':
+                history_index=min(len(history),history_index+1)
+            command=history[history_index] if history_index<len(history) else draft
+            cursor=len(command)
         elif navigation.opened:
             if key=='\x1b':
                 navigation.back()
+                if not navigation.opened and sim.overlay=='settings':sim.overlay=None
             elif key in (curses.KEY_LEFT,curses.KEY_RIGHT):
                 navigation.change_section(-1 if key==curses.KEY_LEFT else 1)
             elif key in (curses.KEY_UP,curses.KEY_DOWN,curses.KEY_PPAGE,curses.KEY_NPAGE):
@@ -446,6 +462,14 @@ def tui(screen, sim, no_color=False):
                         response=navigation.execute(item,sim)
                         feedback=response.splitlines()[0] if response else ''
                         scroll=0
+                        if item.commands and item.commands[0].startswith('/setting screensaver ') and not response.startswith(('Could not run command:','File operation failed:')):
+                            show_screensaver(screen,sim,colors)
+            elif key==' ' and navigation.sections[navigation.section]=='Settings':
+                show_screensaver(screen,sim,colors)
+            elif isinstance(key,str) and key.isdigit() and sim.overlay=='settings':
+                navigation.opened=False
+                command=key
+                cursor=1
             elif key=='/':
                 navigation.opened=False
                 command='/'
@@ -467,8 +491,19 @@ def tui(screen, sim, no_color=False):
                     navigation.opened=True
                     navigation.feedback=''
                 else:
+                    previous_settings=(sim.settings.theme,sim.settings.screensaver)
+                    settings_input=sim.overlay=='settings' and command.strip().isdigit()
                     response = sim.command(command)
                     feedback=response.splitlines()[0] if response else ''
+                    words=command.strip().lower().lstrip('/').split()
+                    if words and (words[0] in ('setting','settings') or settings_input) and words[-1]!='exit' and not response.startswith(('Could not run command:','File operation failed:')):
+                        sim.overlay='settings'
+                        group=None
+                        if (len(words)>1 and words[1] in ('screensaver','saver')) or sim.settings.screensaver!=previous_settings[1]:group='screensaver'
+                        elif (len(words)>1 and words[1]=='theme') or sim.settings.theme!=previous_settings[0]:group='theme'
+                        choice=words[-1]
+                        if choice.isdigit():group='theme' if int(choice)<=5 else 'screensaver'
+                        navigation.open_settings(sim,group)
                 scroll = 0
             else:
                 show_screensaver(screen,sim,colors)
@@ -480,12 +515,19 @@ def tui(screen, sim, no_color=False):
                 cursor -= 1
         elif key == curses.KEY_DC:
             command = command[:cursor]+command[cursor+1:]
+        elif key in (curses.KEY_LEFT,curses.KEY_RIGHT,curses.KEY_UP,curses.KEY_DOWN) and not command.strip():
+            if sim.screen=='orbit' and not sim.overlay and key in (curses.KEY_LEFT,curses.KEY_RIGHT):
+                sim.camera.cycle(-1 if key==curses.KEY_LEFT else 1)
+                feedback='Camera: '+sim.camera_label
+            else:
+                if sim.overlay=='settings':navigation.open_settings(sim)
+                else:navigation.opened=True
+                if key in (curses.KEY_LEFT,curses.KEY_RIGHT):navigation.change_section(-1 if key==curses.KEY_LEFT else 1)
+                else:navigation.move(-1 if key==curses.KEY_UP else 1,sim)
         elif key == curses.KEY_LEFT:
-            sim.camera.cycle(-1)
-            feedback='Camera: '+sim.camera_label
+            cursor=max(0,cursor-1)
         elif key == curses.KEY_RIGHT:
-            sim.camera.cycle(1)
-            feedback='Camera: '+sim.camera_label
+            cursor=min(len(command),cursor+1)
         elif key == '\x02':
             cursor = max(0,cursor-1)
         elif key == '\x06':
@@ -500,17 +542,6 @@ def tui(screen, sim, no_color=False):
             screen.clear()
         elif key == "\x0b":
             command = command[:cursor]
-        elif key == curses.KEY_UP:
-            if history:
-                if history_index == len(history):
-                    draft = command
-                history_index = max(0,history_index-1)
-                command = history[history_index]
-                cursor = len(command)
-        elif key == curses.KEY_DOWN:
-            history_index = min(len(history),history_index+1)
-            command = history[history_index] if history_index < len(history) else draft
-            cursor = len(command)
         elif key == curses.KEY_PPAGE:
             scroll = max(0,scroll-max(1,response_height-1))
         elif key == curses.KEY_NPAGE:

@@ -86,13 +86,14 @@ APP
   /quit                   Exit (/exit also works)
 
 KEYS (full-screen mode)
-  Enter on an empty command opens your chosen screensaver; Enter returns.
+  Outside menus, Enter on an empty command opens your screensaver; Enter returns.
   The simulation pauses during the screensaver and resumes its previous state.
-  Left/Right zooms around the active planet, moon or spacecraft.
+  Left/Right changes the camera only in orbit view with an empty prompt.
   Ctrl+B/F moves the input cursor; Home/End still edit the command line.
-  Tab completes names/commands. Up/Down recall commands.
+  Tab completes names/commands. Ctrl+P/N recalls commands.
   Tab on empty input or F2 opens the menu: arrows choose, Enter opens, Esc backs out.
-  Outside the menu, Left/Right changes camera and Up/Down recalls history.
+  Elsewhere, arrows on empty input open navigation; /setting opens it directly.
+  While typing, Left/Right edits input. Settings: Enter applies/previews, Space previews.
   Page Up/Down scroll responses. Ctrl+U clears input. Ctrl+C or Ctrl+D exits.
   Resize the terminal at any time. A larger window shows more detail.
 
@@ -174,8 +175,9 @@ THEMES, CAMERAS AND LIVE LAUNCHES
 /setting theme amber applies one immediately. --no-color overrides colors.
 /setting screensaver jupiter chooses a planet; all eight planets are included.
 Milky Way and black-hole animations are also available; settings numbers 6-15.
-Enter on an empty line opens it; Enter again returns. Choices save locally.
-Left/Right cycles system/close/body/high/wide cameras around the active target.
+Settings has immediate arrow focus; Enter applies themes or previews savers.
+Space previews the saved animation; Enter again returns. Choices save locally.
+In orbit view, Left/Right cycles system/close/body/high/wide cameras around the active target.
 Ctrl+B/F edits input. Local camera scales use kilometers and enlarged markers;
 mission geometry remains an illustration. Camera/theme changes do not stop missions.
 /live explicitly fetches launch status from The Space Devs Launch Library 2.
@@ -563,7 +565,7 @@ class Simulation:
                 name=args[0].lower()
                 if name in ('next','prev'):self.camera.cycle(1 if name=='next' else -1)
                 else:self.camera.select(name)
-            return 'CAMERA / '+self.camera_label+'\nFollowing: '+self.active_name+'\n\nLeft/Right changes zoom around the active planet, moon or spacecraft.\nBody/high/wide scales adapt to the selected body and its moons.\nMission geometry remains schematic; live launches have no position telemetry.\n/camera system restores automatic framing. earth/moon remain aliases for body/wide.'
+            return 'CAMERA / '+self.camera_label+'\nFollowing: '+self.active_name+'\n\nIn orbit view only, Left/Right changes zoom when the prompt is empty.\nElsewhere arrows navigate; /camera selects zoom directly in any view.\nBody/high/wide scales adapt to the selected body and its moons.\nMission geometry remains schematic; live launches have no position telemetry.\n/camera system restores automatic framing. earth/moon remain aliases for body/wide.'
         if cmd=='live':
             if len(args)==1 and args[0].lower()=='exit':
                 self.overlay=None

@@ -72,7 +72,8 @@ class Settings:
         lines += [('  > ' if key==self.screensaver else '    ')+f'{i}. {label}  /setting screensaver {key}'
                   for i,(key,label) in enumerate(SCREENSAVERS.items(),6)]
         return '\n'.join(lines)+('\n\nType 1-5 for a theme, 6-15 for a screensaver.\n'
-             'Enter on an empty line previews it; Enter again returns.\n'
+             'Full screen: arrows choose; Enter applies themes or previews savers.\n'
+             'Space previews the saved animation; Enter again returns.\n'
              'Preferences save for the next start. --no-color overrides colors.\n'
-             'Left/Right: camera or animation zoom. Ctrl+B/F: edit input.\n'
+             'Camera arrows work only in orbit view. Ctrl+P/N: command history.\n'
              '/setting exit or Esc returns without stopping a mission.')

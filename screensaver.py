@@ -138,6 +138,7 @@ def show_screensaver(screen,sim,colors=False):
             for index,color in enumerate(palette):
                 curses.init_pair(9+index,color,curses.COLOR_BLACK)
         started=time.monotonic()
+        zoom_index=getattr(getattr(sim,'camera',None),'index',0)
         deadline=started
         try:
             curses.curs_set(0)
@@ -152,7 +153,7 @@ def show_screensaver(screen,sim,colors=False):
             if now>=deadline:
                 height,width=screen.getmaxyx()
                 screen.erase()
-                zoom=(1,.70,.90,1.12,1.35)[getattr(getattr(sim,'camera',None),'index',0)]
+                zoom=(1,.70,.90,1.12,1.35)[zoom_index]
                 for y,x,text,color,bold in scene.runs(max(0,width-1),height,now-started,zoom=zoom):
                     style=0
                     if colors:
@@ -175,8 +176,8 @@ def show_screensaver(screen,sim,colors=False):
                 continue
             if key in ('\n','\r',curses.KEY_ENTER,'\x1b'):
                 break
-            if key in (getattr(curses,'KEY_LEFT',-10),getattr(curses,'KEY_RIGHT',-11)) and hasattr(sim,'camera'):
-                sim.camera.cycle(-1 if key==getattr(curses,'KEY_LEFT',-10) else 1)
+            if key in (getattr(curses,'KEY_LEFT',-10),getattr(curses,'KEY_RIGHT',-11)):
+                zoom_index=(zoom_index+(-1 if key==getattr(curses,'KEY_LEFT',-10) else 1))%5
             if key in ('\x03','\x04'):
                 sim.running=False
     finally:

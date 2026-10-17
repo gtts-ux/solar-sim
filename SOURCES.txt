@@ -170,16 +170,13 @@ from the next 100 global schedule entries. No synthetic live paths.
 
 BLACK HOLE SCREENSAVER / visual references
 
-DNEG: Gravitational Lensing by Spinning Black Holes (Interstellar / Gargantua)
-https://www.dneg.com/news/gravitational-lensing-by-spinning-black-holes
 NASA: Black Hole's Warped World (turbulent gas, light bending, brightness asymmetry)
 https://www.nasa.gov/universe/nasa-visualization-shows-a-black-holes-warped-world/
 NASA Science: Black Hole Anatomy (accretion flow and turbulent corona)
 https://science.nasa.gov/universe/black-holes/anatomy/
 
-The terminal animation uses an original procedural disk texture and
-analytical lensing curves inspired by Gargantua's appearance in Interstellar.
-It is an artistic approximation, not a general-relativistic ray tracer.
+The terminal animation is an artistic procedural gas-volume visualization
+with approximate lensing, not a general-relativistic ray tracer.
 
 PLANET SCREENSAVERS / visual references
 

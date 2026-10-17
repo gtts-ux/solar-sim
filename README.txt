@@ -162,8 +162,9 @@ KEYBOARD
     Enter in screensaver    Return to exactly the previous view
     Tab on empty input / F2 Open the arrow navigation menu
     Tab while typing        Complete a command or a body name
-    Up / Down               Recall this session's command history
-    Left / Right            Cycle camera in every full-screen view
+    Up / Down               Browse menu items (empty input)
+    Ctrl+P / Ctrl+N         Recall this session's command history
+    Left / Right            Camera only in orbit view; otherwise menu navigation
     Ctrl+B / Ctrl+F         Move input cursor
     Home / End              Start / end of input (Ctrl+A / Ctrl+E too)
     Backspace / Delete      Edit input
@@ -176,7 +177,8 @@ KEYBOARD
 
 ARROW NAVIGATION (full-screen macOS/Linux)
 
-Open with Tab on empty input, F2 or /menu. Left/Right changes section;
+Open with arrows on empty input, Tab, F2 or /menu. /setting opens the
+Settings section directly. Left/Right changes section;
 Up/Down selects an item; Enter opens or applies it. Esc goes back one level,
 then closes the menu; F2 closes it immediately. Page Up/Down scrolls lists;
 Home/End selects the first/last item. Press / to return to command entry.
@@ -195,7 +197,8 @@ Browsing/cancelling leaves your current view and replay running. Selecting
 an action has the same effect as its slash command. Theme, screensaver,
 pause/resume and speed changes keep the menu open; F2 returns to your view.
 Outside the menu,
-Left/Right remains camera zoom and Up/Down recalls command history. Enter on
+Left/Right changes camera only in orbit view with empty input. Elsewhere
+arrows browse; Ctrl+P/N recalls history and Left/Right edits typed input. Enter on
 an empty prompt still opens your screensaver. Plain mode uses slash commands.
 
 On a MacBook, Page Up/Down is usually Fn+Up/Down. History is in memory
@@ -568,7 +571,7 @@ Open /setting to choose a screensaver and save it for the next start:
     /setting screensaver milky-way     Rotating spiral arms and warm core
     /setting screensaver earth         Shaded Earth, continents and clouds
     /setting screensaver saturn        Banded planet, shadow and tilted rings
-    /setting screensaver black-hole    Gargantua disk, bright arcs and dark center
+    /setting screensaver black-hole    Dark shadow, turbulent clouds and wisps
     /setting screensaver mercury       Gray cratered terrain and bright rims
     /setting screensaver venus         Creamy golden cloud swirls
     /setting screensaver mars          Rusty terrain, dark markings, polar ice
@@ -592,12 +595,11 @@ second, with Unicode braille for subcell detail and time-based rotation.
 Cached geometry keeps rotation smooth; no per-frame random particles are
 used. Earth has stylized geography, polar ice, drifting clouds and a blue
 limb. Saturn's near rings cover the planet while its globe hides the far
-rings; ring gaps and a cast shadow add depth. The black hole is inspired by
-Gargantua from Interstellar: a thin, wide, gold-and-ivory accretion disk,
-a bright arc bent over the black center, a smaller lower echo and a photon
-rim. The foreground disk passes across the shadow's lower edge. Gas streams
-at different speeds with winding filaments, uneven brightness and soft glow.
-Cached light-path geometry and time-interpolated texture keep motion smooth.
+rings; ring gaps and a cast shadow add depth. The black hole has a dark
+center surrounded by thick, turbulent gas with soft, feathered edges.
+Clouds curl at different speeds, with a brighter approaching side, a subtle
+photon rim and a lensed glow. A cached procedural density volume replaces
+the flat-looking disk; time-interpolated cloud shading keeps motion smooth.
 
 256-color terminals get gradients; basic terminals get a simpler palette.
 The new objects retain recognizable natural colors; the sky adapts to the
@@ -628,7 +630,7 @@ or /setting 2 applies and saves a theme immediately in settings.json.
 It colors the interface and screensaver. --no-color and NO_COLOR override
 colors. /setting exit or Esc returns without stopping a mission.
 
-Left/Right changes zoom in every full-screen view, including missions:
+Left/Right changes camera only in orbit view with an empty prompt:
 System (automatic overview), Close (10 km), Body view, High orbit, Wide.
 Every local zoom centers the active planet, moon or spacecraft. Body and
 High orbit scales grow with the selected body's radius; Wide includes its
@@ -645,7 +647,13 @@ unlocated spacecraft marker and "Position unavailable", not an invented
 trajectory or an unrelated mission replay. /live exit restores the previous
 target. Replay geometry is schematic; catalogue spacecraft orbits are
 illustrative. Markers are enlarged, dotted limbs are size references.
-Ctrl+B/F or Home/End edits input. Screensaver arrows change animation framing.
+Arrows on empty input browse the app outside orbit view. /setting opens
+the arrow picker directly: choose Themes or Screensavers, Enter opens it,
+Up/Down selects, and Enter applies a theme or saves/previews a screensaver.
+Space previews the saved screensaver. Numeric shortcuts remain available.
+Ctrl+P/N recalls history. Left/Right or Ctrl+B/F edits typed input.
+During missions/live views, use /camera to select zoom directly.
+Screensaver arrows zoom only the animation and preserve the orbit camera.
 
 /live requests actual launch status from The Space Devs Launch Library 2.
 Reported in-flight launches appear first, followed by matches from the

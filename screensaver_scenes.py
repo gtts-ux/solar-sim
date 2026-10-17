@@ -19,8 +19,8 @@ PALETTES = {
               (237,240,244,248,251,253,255,231), (17,24,31,38,45,81,159,231)),
     'saturn': ((58,94,136,137,179,180,222,230), (58,94,100,101,137,179,186,223),
                (235,237,239,243,246,250,223,230), GRAY),
-    'black-hole': ((52,94,130,136,137,179,180,223), (94,136,179,180,222,223,230,231),
-                   (52,94,130,172,178,179,223,230), (136,179,180,222,223,230,255,231)),
+    'black-hole': ((52,88,94,130,166,172,208,214), (52,94,130,172,214,220,229,230),
+                   (17,18,54,55,61,99,141,183), (52,94,178,214,221,229,230,231)),
 }
 PALETTES.update({
     'mercury': ((234,237,240,243,246,249,252,255),(233,236,239,242,245,247,250,253),
@@ -559,23 +559,12 @@ class Planet(Scene):
 
 
 class BlackHole(Scene):
-    """Gargantua-inspired thin disk, upper lensed arc and lower secondary image.
+    """A softly integrated gas volume with advected, periodic cloud turbulence.
 
-    Analytical light paths are an artistic approximation, not a Kerr ray tracer.
-    Cached geometry and an advected noise atlas keep the gas moving continuously.
+    Curved secondary emission is an artistic lensing approximation, not GR tracing.
+    Only the viewport geometry and density atlas are cached; clouds move with time.
     """
     TW,TH=256,128
-    DISK_Y=-.62
-    INCLINATION=.10
-
-    @staticmethod
-    def disk_radius(u,v):
-        return math.hypot(u,(v-BlackHole.DISK_Y)/BlackHole.INCLINATION)
-
-    @staticmethod
-    def foreground(u,v):
-        r=BlackHole.disk_radius(u,v)
-        return v<BlackHole.DISK_Y and 1.65<r<5.8
 
     def __init__(self):
         super().__init__()
@@ -597,83 +586,87 @@ class BlackHole(Scene):
                 self.cloud.append(max(0.,(value-.34)*3.4)**2.4)
 
     def build_geometry(self,width,height,zoom):
-        radius=max(1,min(width*.17,height*.64)*zoom)
+        radius=max(1,min(width*.205,height*.65)*zoom)
         self.radius=radius
         samples=[]
-        # Two vertical subpixels share a shade, but have independent silhouette
-        # masks. The foreground disk may cover the lower edge of the dark shadow.
-        for row in range(height):
-            for col in range(width):
-                index=row*width+col
-                for dy in (0,2):
-                    for dx in (0,1):
-                        u=(col*2+dx+.5-width)/radius
-                        v=(height*2-row*4-dy-1)/radius
-                        mask=0
-                        for offset in (0,1):
-                            py=v+(.5-offset)/radius
-                            if u*u+py*py>=1 or self.foreground(u,py):mask|=DOTS[dy+offset][dx]
-                        if not mask:continue
-                        rho=math.hypot(u,v)
-                        r=self.disk_radius(u,v)
-                        inner=min(1.,max(0.,(r-1.65)/.25))
-                        inner=inner*inner*(3-2*inner)
-                        outer=min(1.,max(0.,(5.5-r)/1.25))
-                        outer=outer*outer*(3-2*outer)
-                        disk=1.9*inner*outer*math.exp(-((r-2.45)/2.2)**2)/(.55+.17*r)
-                        angle=math.atan2((v-self.DISK_Y)/self.INCLINATION,u)
-                        # The upper and lower images map the far side of the
-                        # same disk onto tight curves around the capture shadow.
-                        upper=.5+.5*math.tanh((v+.12)*6)
-                        arc=upper*(.95*math.exp(-((rho-1.13)/.07)**2)+.72*math.exp(-((rho-1.34)/.24)**2))
-                        echo=(1-upper)*.55*math.exp(-((rho-1.13)/.10)**2)
-                        if rho<1:
-                            arc=echo=0.
-                            if not self.foreground(u,v):disk=0.
-                        lens_r=max(1.7,2.1+(rho-1.1)*4.)
-                        lens_angle=math.atan2(v,u)
-                        layers=[]
-                        for amount,source_r,source_angle in ((disk,r,angle),(arc+echo,lens_r,lens_angle)):
-                            tex_u=source_angle*self.TW/math.tau+source_r*19+math.sin(source_angle*3)*3
-                            tex_row=int(source_r*.19*self.TH)%self.TH
-                            speed=self.TW/math.tau*.95/(source_r**1.5+.6)
-                            layers.append((amount,tex_u,tex_row*self.TW,speed))
-                        photon=.20*math.exp(-((rho-1.035)/.037)**2) if rho>=1 else 0.
-                        bloom=.075*math.exp(-((v+.90)/.21)**2-(abs(u)/4.9)**4)
-                        bloom+=.028*math.exp(-((rho-1.45)/.53)**2)
-                        flare=.12*math.exp(-((v+.94)/.040)**2-(abs(u)/4.8)**6)
-                        if rho<1 and not self.foreground(u,v):bloom=flare=0.
-                        if disk+arc+echo+photon+bloom+flare<.025:continue
-                        boost=1-.14*u/(1+abs(u))
-                        bits=tuple(DOTS[dy+i][dx] for i in (0,1) if mask&DOTS[dy+i][dx])
-                        samples.append((index,mask,bits,*layers,photon,bloom,flare,boost))
+        ca,sa=math.cos(-.12),math.sin(-.12)
+        inclination=.43;ci=math.sqrt(1-inclination*inclination)
+        # Color is resolved per terminal cell. Cache its exact eight-dot shadow
+        # mask, then integrate the volume once, rather than eight identical colors.
+        for index in range(width*height):
+            col,row=index%width,index//width
+            x=(col*2+1-width)/radius;y=(height*2-row*4-2)/radius
+            mask=0
+            for dy in range(4):
+                for dx in range(2):
+                    px=(col*2+dx+.5-width)/radius
+                    py=(height*2-row*4-dy-.5)/radius
+                    if px*px+py*py>=1:mask|=DOTS[dy][dx]
+            if not mask:continue
+            rho=max(1.,math.hypot(x,y))
+            u,v=x*ca+y*sa,-x*sa+y*ca
+            layers=[]
+            for depths in ((.3,.9,1.6,2.4,3.3),(-.3,-.9,-1.6,-2.4,-3.3)):
+                column=mean_r=mean_h=mean_s=mean_c=0.
+                for z in depths:
+                    plane=z*ci-v*inclination
+                    r=math.hypot(u,plane)
+                    h=v*ci+z*inclination
+                    # A thick, hot flow: diffuse edges, with no hard outer disk boundary.
+                    density=math.exp(-((r-2.15)/1.15)**2-(h/(.22+.21*r))**2)
+                    density*=min(1.,max(0.,(r-.9)*2))/(.65+r*.45)
+                    angle=math.atan2(plane,u)
+                    column+=density
+                    mean_r+=r*density;mean_h+=h*density
+                    mean_s+=math.sin(angle)*density;mean_c+=math.cos(angle)*density
+                if column<.002:
+                    layers.append((0.,0.,0,0.));continue
+                r=mean_r/column;h=mean_h/column
+                angle=math.atan2(mean_s,mean_c)
+                # Radial winding and differential angular velocity stretch clouds into wisps.
+                tex_u=angle*self.TW/math.tau+r*19+math.sin(angle*2)*7
+                row=int((r*.19+h*.21)*self.TH)%self.TH
+                speed=self.TW/math.tau*.68/(r**1.5+.6)
+                layers.append((column,tex_u,row*self.TW,speed))
+            lens_r=math.hypot(u,v/.98)
+            lens=math.exp(-((lens_r-1.43)/.25)**2)*(.34 if v>0 else .10)
+            photon=math.exp(-((rho-1.045)/.042)**2)*.19
+            haze=math.exp(-((rho-1.65)/.95)**2)*.055
+            boost=1-.33*u/(rho+.1)
+            if sum(layer[0] for layer in layers)*boost+lens+photon+haze<.035:continue
+            samples.append((index,mask,*layers,lens,photon,haze,boost))
         return samples
 
     def sky_visible(self,x,y,width,height):
-        # Stars never leak through dark or dithered cells inside the shadow.
-        return math.hypot((x*2+1-width)/self.radius,(y*4+2-height*2)/self.radius)>1.16
+        return math.hypot((x*2+1-width)/self.radius,(y*4+2-height*2)/self.radius)>1.12
 
     def frame(self,width,height,seconds,zoom=1):
         if width<=0 or height<=0:return []
+        raster=Raster(width,height)
+        cells=[[(' ',24,False) for _ in range(width)] for _ in range(height)]
         mono=getattr(self,'monochrome',False)
-        raster=Raster(width,height,mono)
         texture=self.cloud;tw=self.TW
-        for index,mask,bits,direct,lensed,photon,bloom,flare,boost in self.geometry(width,height,zoom):
-            emission=0.
-            for amount,u,row,speed in (direct,lensed):
+        for index,mask,near,far,lens,photon,haze,boost in self.geometry(width,height,zoom):
+            column=0.;cloud_light=0.
+            for amount,u,row,speed in (near,far):
                 if not amount:continue
                 phase=u+seconds*speed
                 base=math.floor(phase);blend=phase-base
                 a=texture[row+base%tw];b=texture[row+(base+1)%tw]
-                density=min(1.5,a+(b-a)*blend)
-                strands=.76+.24*math.sin(phase*.48+row*.017)
-                emission+=amount*(.55+.65*density)*strands
-            brightness=1-math.exp(-((emission+photon)*boost+bloom+flare)*1.45)
-            family=3 if brightness>.79 else 1 if brightness>.40 else 0
-            if mono:
-                for bit in bits:raster.dot(index,bit,family,brightness)
-            else:
-                if brightness<.20:
-                    mask&=GAS_MASKS[(index%width)&1][max(0,min(16,round(brightness/.20*16)))]
-                if mask:raster.dot(index,mask,family,brightness)
-        return self.finish(raster,seconds)
+                density=a+(b-a)*blend
+                column+=amount*density
+                cloud_light+=density
+            opacity=column/(1.25+column)
+            brightness=min(.99,opacity*boost+lens*(.20+.45*cloud_light)+photon+haze*cloud_light)
+            if brightness<.02:continue
+            family=3 if brightness>.94 else 1 if brightness>.40 else 0
+            # Sparse subcell coverage lets faint gas dissolve into space instead of
+            # drawing a solid contour. This same stable dither supports monochrome.
+            coverage=brightness*(.65,.95,1.15,.90)[family] if mono else brightness/.24
+            if coverage<1:
+                level=max(0,min(16,round(coverage*16)))
+                mask&=GAS_MASKS[(index%width)&1][level]
+            if not mask:continue
+            level=min(7,int(brightness*7.8))
+            cells[index//width][index%width]=(chr(0x2800+mask),family*8+level,level>=6)
+        return self.finish(raster,seconds,cells)

@@ -58,6 +58,17 @@ class Navigation:
         self.opened = not self.opened
         self.feedback = ''
 
+    def open_settings(self,sim,group=None):
+        """Give /setting immediate arrow focus, including typed/numeric choices."""
+        self.change_section(self.sections.index('Settings')-self.section)
+        self.opened=True
+        self.index=0
+        if group in ('theme','screensaver'):
+            self.index=0 if group=='theme' else 1
+            self.activate(sim)
+            choices=list(THEMES) if group=='theme' else list(SCREENSAVERS)
+            self.index=choices.index(sim.settings.theme if group=='theme' else sim.settings.screensaver)
+
     @property
     def title(self):
         return self.pages[-1].title if self.pages else self.sections[self.section]
