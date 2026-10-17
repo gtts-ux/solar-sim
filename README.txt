@@ -568,7 +568,7 @@ Open /setting to choose a screensaver and save it for the next start:
     /setting screensaver milky-way     Rotating spiral arms and warm core
     /setting screensaver earth         Shaded Earth, continents and clouds
     /setting screensaver saturn        Banded planet, shadow and tilted rings
-    /setting screensaver black-hole    Dark shadow, turbulent clouds and wisps
+    /setting screensaver black-hole    Gargantua disk, bright arcs and dark center
     /setting screensaver mercury       Gray cratered terrain and bright rims
     /setting screensaver venus         Creamy golden cloud swirls
     /setting screensaver mars          Rusty terrain, dark markings, polar ice
@@ -592,11 +592,12 @@ second, with Unicode braille for subcell detail and time-based rotation.
 Cached geometry keeps rotation smooth; no per-frame random particles are
 used. Earth has stylized geography, polar ice, drifting clouds and a blue
 limb. Saturn's near rings cover the planet while its globe hides the far
-rings; ring gaps and a cast shadow add depth. The black hole has a dark
-center surrounded by thick, turbulent gas with soft, feathered edges.
-Clouds curl at different speeds, with a brighter approaching side, a subtle
-photon rim and a lensed glow. A cached procedural density volume replaces
-the flat-looking disk; time-interpolated cloud shading keeps motion smooth.
+rings; ring gaps and a cast shadow add depth. The black hole is inspired by
+Gargantua from Interstellar: a thin, wide, gold-and-ivory accretion disk,
+a bright arc bent over the black center, a smaller lower echo and a photon
+rim. The foreground disk passes across the shadow's lower edge. Gas streams
+at different speeds with winding filaments, uneven brightness and soft glow.
+Cached light-path geometry and time-interpolated texture keep motion smooth.
 
 256-color terminals get gradients; basic terminals get a simpler palette.
 The new objects retain recognizable natural colors; the sky adapts to the

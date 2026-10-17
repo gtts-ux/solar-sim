@@ -244,20 +244,51 @@ class GasCloudTests(unittest.TestCase):
         self.assertGreater(feathered,100)
         self.assertGreater(above_plane,100)
 
-    def test_subcell_shadow_blocks_gas_and_stars_at_every_zoom(self):
+    def test_shadow_blocks_background_gas_and_stars_while_foreground_disk_remains_visible(self):
         scene=self.scene
-        for zoom in (.7,1.,1.35):
-            frame=scene.frame(80,28,12,zoom)
-            for y,row in enumerate(frame):
-                for x,(glyph,_,_) in enumerate(row):
-                    for dy in range(4):
-                        for dx in range(2):
-                            u=(x*2+dx+.5-80)/scene.radius
-                            v=(56-y*4-dy-.5)/scene.radius
-                            if u*u+v*v>=.96:continue
-                            if glyph==' ':continue
-                            self.assertTrue(0x2800<ord(glyph)<0x2900)
-                            self.assertFalse((ord(glyph)-0x2800)&DOTS[dy][dx])
+        for mono in (False,True):
+            scene.monochrome=mono
+            for zoom in (.7,.9,1.,1.12,1.35):
+                frame=scene.frame(80,28,12,zoom)
+                foreground=0
+                for y,row in enumerate(frame):
+                    for x,(glyph,_,_) in enumerate(row):
+                        for dy in range(4):
+                            for dx in range(2):
+                                u=(x*2+dx+.5-80)/scene.radius
+                                v=(56-y*4-dy-.5)/scene.radius
+                                if u*u+v*v>=.96 or glyph==' ':continue
+                                self.assertTrue(0x2800<ord(glyph)<0x2900)
+                                visible=(ord(glyph)-0x2800)&DOTS[dy][dx]
+                                # Only the narrow lower foreground band can
+                                # pass across the capture shadow's silhouette.
+                                if v>-.75:self.assertFalse(visible)
+                                elif visible:foreground+=1
+                self.assertGreater(foreground,0)
+        scene.monochrome=False
+
+    def test_gargantua_has_thin_wide_disk_upper_arc_lower_echo_and_ivory_highlights(self):
+        scene=self.scene
+        frame=scene.frame(120,40,0)
+        counts=dict(disk=0,upper=0,lower=0,offplane=0,hot=0)
+        for y,row in enumerate(frame):
+            for x,(glyph,color,_) in enumerate(row):
+                if not 0x2800<ord(glyph)<0x2900:continue
+                for dy,bits in enumerate(DOTS):
+                    for dx,bit in enumerate(bits):
+                        if not (ord(glyph)-0x2800)&bit:continue
+                        u=(x*2+dx+.5-120)/scene.radius
+                        v=(80-y*4-dy-.5)/scene.radius
+                        if 2<abs(u)<4.3 and -1.1<v<-.15:counts['disk']+=1
+                        if abs(u)<.7 and 1.05<v<1.8:counts['upper']+=1
+                        if abs(u)<.6 and -1.4<v<-1.0:counts['lower']+=1
+                        if 2<abs(u)<4.3 and abs(v+.62)>.9:counts['offplane']+=1
+                        if color//8==3:counts['hot']+=1
+        self.assertGreater(counts['disk'],500)
+        self.assertGreater(counts['upper'],100)
+        self.assertGreater(counts['lower'],25)
+        self.assertLess(counts['offplane'],20)
+        self.assertGreater(counts['hot'],100)
 
 class PlanetSceneTests(unittest.TestCase):
     @classmethod
