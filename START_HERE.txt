@@ -16,6 +16,12 @@ If the Mac launcher will not open, open a terminal here and type:
 Use macOS or Linux for the full-screen animated interface.
 Make the terminal at least 64 columns by 22 rows.
 
+Optional short commands (macOS/Linux):
+   Run once in the extracted app folder: python3 install_commands.py
+   Open a new terminal window, then type solar-sim or sol-sim.
+   Both names work from any directory. No sudo is needed.
+   Keep this folder in place; reinstall the commands if you move it.
+
 Try:
    /planet
    /orbit
@@ -27,7 +33,7 @@ Try:
    /live
 
 Use /help for commands and /quit to exit.
-In full-screen mode, Enter on empty input opens the Milky Way screensaver.
+In full-screen mode, Enter on empty input opens your selected screensaver.
 Press Enter again to return to your previous view.
 Left/Right changes camera, including during missions. Ctrl+B/F edits input.
 Use /camera system to restore automatic framing.

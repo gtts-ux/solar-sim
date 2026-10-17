@@ -39,6 +39,16 @@ class DistributionTests(unittest.TestCase):
                                           text=True,capture_output=True,timeout=30)
                     self.assertEqual(result.returncode,0,result.stderr)
                     self.assertIn('/neptune',result.stdout)
+                commands=temp/'user commands'
+                result=subprocess.run([sys.executable,str(extracted/'install_commands.py'),
+                                       '--bin-dir',str(commands),'--no-path'],cwd=temp,
+                                      text=True,capture_output=True,timeout=30)
+                self.assertEqual(result.returncode,0,result.stderr)
+                for name in ('solar-sim','sol-sim'):
+                    result=subprocess.run([str(commands/name),'--offline','-c','/planet'],cwd=temp,
+                                          text=True,capture_output=True,timeout=30)
+                    self.assertEqual(result.returncode,0,result.stderr)
+                    self.assertIn('/neptune',result.stdout)
             if sys.platform=='win32':
                 result=subprocess.run(['cmd','/c',str(extracted/'Start Solar Sim.bat'),'--offline','-c','/planet'],
                                       cwd=temp,text=True,capture_output=True,timeout=30)

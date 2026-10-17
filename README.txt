@@ -28,6 +28,28 @@ For full-screen mode, use at least 64 columns by 22 rows. Around 120 by
 /orbit opens the full-screen map. At 108+ columns, the solar view shows
 inner and outer planets separately so all eight orbits are readable.
 
+TERMINAL COMMANDS / macOS and Linux
+
+Run this once from the app folder:
+
+    python3 install_commands.py
+
+Open a new terminal window. Both names start the same app from any folder:
+
+    solar-sim
+    sol-sim
+
+Options work with either name, for example solar-sim --offline or
+sol-sim --plain. The installer puts launchers in ~/.local/bin and adds
+that directory to your zsh, bash or sh startup files. No sudo or packages
+are needed. Existing shell settings and unrelated command files are kept.
+
+Keep the app folder in place. After moving it, run the installer again
+from the new folder to update both commands. Run it from the copy you
+want the commands to open. Use --no-path to manage PATH yourself, or
+--bin-dir /your/command/folder to choose another command directory.
+Windows users can use the existing Start Solar Sim.bat launcher.
+
 FIRST THINGS TO TRY
 
     /planet

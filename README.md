@@ -30,6 +30,18 @@ On Windows use `py -3 solar_sim.py --plain` or the included `.bat` launcher. Nat
 
 Use a terminal at least **64 columns × 22 rows**; about 120 × 40 is more comfortable. Run `python3 solar_sim.py --offline` to disable automatic JPL requests, or add `--plain` for text mode.
 
+## Start with a short command
+
+On macOS/Linux, run this once from the extracted app folder:
+
+```sh
+python3 install_commands.py
+```
+
+Open a **new terminal window**, then type either `solar-sim` or `sol-sim` from any directory. Both launch the same app; options such as `solar-sim --offline` and `sol-sim --plain` work too.
+
+The installer creates user commands in `~/.local/bin` and adds that directory to zsh, bash or sh startup files. It needs no administrator access or extra packages. Existing shell settings are preserved. Keep the app folder in place; rerun the installer from its new location after moving it. `--bin-dir PATH --no-path` lets you manage the command directory and PATH yourself. Windows retains the `.bat` launcher.
+
 ## Try it
 
 ```text
