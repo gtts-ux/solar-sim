@@ -124,7 +124,8 @@ class ScreensaverStateTests(unittest.TestCase):
         def fail(_):
             self.assertTrue(sim.paused)
             raise RuntimeError('initialization failed')
-        with patch('screensaver.animation',side_effect=fail):
+        curses=SimpleNamespace(error=type('CursesError',(Exception,),{}),curs_set=Mock())
+        with patch.dict('sys.modules',{'curses':curses}),patch('screensaver.animation',side_effect=fail):
             with self.assertRaises(RuntimeError):show_screensaver(screen,sim)
         self.assertFalse(sim.paused)
         screen.bkgd.assert_called_with(987)
