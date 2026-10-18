@@ -364,10 +364,10 @@ COMMANDS = ["mission", "missions", "day", "satellites", "satellite", "dwarf", "m
             "now", "reset", "scale", "labels", "trails", "export", "info", "sources", "help", "clear", "quit", "exit"]
 
 
-COMMANDS = ['tutorial','menu','setting','settings','camera','live'] + COMMANDS
+COMMANDS = ['proxima','tutorial','menu','setting','settings','camera','live'] + COMMANDS
 
 
-class Simulation:
+class SolarSimulation:
     def __init__(self, online=False, settings_path=None, launch_cache_path=None):
         self.ephemeris = Ephemeris(online=online)
         self.settings=Settings(settings_path or ROOT/'settings.json')
@@ -412,7 +412,7 @@ class Simulation:
         if not self.paused:
             self.set_date(datetime.now(UTC) if self.clock_mode == "realtime" else
                           self.date + timedelta(days=elapsed * self.speed), clamp=True)
-        if self.clock_mode == "realtime":
+        if self.clock_mode == "realtime" and not self.proxima_mode:
             self.ephemeris.ensure(self.date)
 
     def set_date(self, date, clamp=False):
@@ -482,7 +482,7 @@ class Simulation:
         center,bodies = self.map_system()
         origin = self.position(center)
         return [(index+1,body,math.dist(self.position(body),origin),
-                 self.ephemeris.source(body,self.date)) for index,body in enumerate(bodies)]
+                 self.source(body)) for index,body in enumerate(bodies)]
 
     @property
     def primary_bodies(self):
@@ -1001,7 +1001,7 @@ class Simulation:
 
         palette = (7,3,4,1,5,2,6,4,7)
         def identity(body,index):
-            key = self.orbit_number(body,index+1)-1 if center is SUN else index
+            key = self.orbit_number(body,index+1)-1 if center.parent is None else index
             return str(key+1),palette[key % len(palette)]
 
         if self.trails:
@@ -1040,12 +1040,12 @@ class Simulation:
         for index,(x,y,body) in enumerate(points):
             marker,color = identity(body,index)
             put(x-1,y,"["+marker+"]",color,True)
-        put(cx,cy,"*" if center is SUN else "O",center.color,True)
+        put(cx,cy,"*" if center.parent is None else "O",center.color,True)
         if not bodies:
             if self.system_filter == "spacecraft":
                 message = "No confirmed current spacecraft orbiters in this catalogue."
             else:
-                message = f"{center.name} has no moons." if not center.known_moons else f"{center.known_moons} known moons; no orbits included."
+                message = 'No confirmed moons; existence is unknown.' if self.proxima_mode else f"{center.name} has no moons." if not center.known_moons else f"{center.known_moons} known moons; no orbits included."
             put(max(0,cx-len(message)/2),min(height-1,cy+2),message,3,True)
         return cells
 
@@ -1094,12 +1094,15 @@ class Simulation:
         body=self.orbit_focus or self.selected
         radius=body.radius
         if isinstance(body,Spacecraft):radius=lookup(body.parent).radius
-        children=[*satellites(body.name),*orbiters(body.name,self.date)]
+        children=self.children(body)
         reach=max((b.orbit*(1+b.eccentricity) for b in children),default=0.)
         # A moon or catalogue spacecraft gets enough context to see its primary.
         if body.kind in ('Natural satellite','Artificial satellite'):
             reach=max(reach,body.orbit*(1+body.eccentricity))
         return self.camera.framing(radius,reach)
+
+    def children(self, body):
+        return [*satellites(body.name),*orbiters(body.name,self.date)]
 
     @property
     def camera_label(self):
@@ -1132,8 +1135,8 @@ class Simulation:
         if self.mission:return self.mission.scene(width,height,self.camera)
         target=self.orbit_focus or self.selected
         reference=self.position(target)
-        children=[*satellites(target.name),*orbiters(target.name,self.date)]
-        parent=lookup(target.parent) if target.parent else None
+        children=self.children(target)
+        parent=self.lookup(target.parent) if target.parent else None
         neighbors=([parent,*satellites(parent.name),*orbiters(parent.name,self.date)]
                    if parent and target.kind in ('Natural satellite','Artificial satellite') else [parent] if parent else [])
         # Target last, with its physical radius, regardless of the current map's system.
@@ -1146,9 +1149,9 @@ class Simulation:
             points.append(Point(body.name,relative[0],relative[1],body.color,
                                 '+' if isinstance(body,Spacecraft) else 'O' if body is target else 'o',
                                 0 if isinstance(body,Spacecraft) else body.radius))
-            if body is not SUN and self.trails:
+            if body.parent and self.trails:
                 path=self.orbit_path(body)
-                primary=self.position(lookup(body.parent))
+                primary=self.position(self.lookup(body.parent))
                 paths.append([(p[0]+primary[0]-reference[0],p[1]+primary[1]-reference[1])
                               for p in (path(i*math.tau/240) for i in range(241))])
         extent,label=self.body_framing()
@@ -1163,3 +1166,10 @@ class Simulation:
                     'Spacecraft are illustrative. /camera system restores numbered orbit maps.')
         legend = "\n".join(f"  [{self.orbit_number(b,index)}] {b.name:<12} {distance:>18,.0f} km from parent / {source}" for index,b,distance,source in self.position_rows())
         return f"ORBIT MAP / {self.view} / {self.scale} spacing / enlarged markers\n{self.status()}\n\n" + "\n".join("".join(c[0] for c in row) for row in cells) + "\n\nNUMBERED ORBITS / brackets mark current positions\n" + legend + "\n\nPaths: current-state osculating ellipses when JPL is available; offline ellipses otherwise. /orbit inner /orbit jupiter /back"
+
+
+from proxima import ProximaSupport
+
+
+class Simulation(ProximaSupport, SolarSimulation):
+    """Solar System simulation with optional installed system catalogues."""

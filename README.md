@@ -56,6 +56,21 @@ sol-sim -u
 
 The update applies to the folder your command launches. Git checkout users can use `git pull` instead; the ZIP updater changes app files without committing or changing Git history. Direct Python alternative: `python3 solar_sim.py --update` (Windows: `py -3 solar_sim.py --update`). Copies older than v1.6.0 need the latest ZIP once to gain this command. A version already current is left unchanged.
 
+## Proxima Centauri mod
+
+With v1.7.0 or newer, quit the app and run:
+
+```sh
+sol-sim -m"proxima centauri"
+sol-sim
+```
+
+Then use `/proxima centauri` (or `/proxima centari`) inside the app. `/planet` lists Proxima d and b, `/star` opens the red dwarf, and `/orbit` displays their orbits. Try `/proxima b` and `/compare "proxima b" "proxima d"`. `/proxima exit` restores normal planets; `/dwarf` switches to dwarfs. The arrow menu has a **Mods** section.
+
+The installer tries the separate `gtts-ux/proxima-centauri-mod` repository, then explicitly falls back to the bundled package if unavailable. `sol-sim --offline -m"proxima centauri"` installs without internet. Re-run `-m` to update the mod. Installed JSON data lives in `mods/`, is preserved by `sol-sim -u`, and is loaded without executing mod code.
+
+These are illustrative local, star-centered orbits using published scales and periods; phases and planes are arbitrary, **not current observed positions**. Planet masses are RV minimum masses; radii are estimates. Days, atmospheres, composition and moons are unknown. Proxima c remains a candidate and is described by `/proxima c` without a simulated orbit. `/sources` in this mode gives the NASA and research references. Distances between the Solar and Proxima systems are not modeled. Alpha Centauri A/B are outside this local model.
+
 ## Try it
 
 ```text

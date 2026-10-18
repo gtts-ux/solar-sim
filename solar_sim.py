@@ -42,6 +42,8 @@ def completions(line, sim=None):
     """Complete commands and bodies, retaining a slash on direct body commands."""
     if not line.startswith("/"):
         return []
+    if line.startswith('/proxima '):
+        return [value for value in ('/proxima centauri','/proxima centari','/proxima exit','/proxima b','/proxima d','/proxima c') if value.startswith(line.lower())]
     if line.startswith('/mission '):
         tail=line[len('/mission '):]
         prefix='/mission '
@@ -181,7 +183,7 @@ def tui(screen, sim, no_color=False):
             write(h-5,2,'Left/Right camera / /camera system restores the original numbered orbit view',8)
             return
         rows = sim.position_rows()
-        legend_rows = (len(rows)+1)//2
+        legend_rows = len(rows) if sim.proxima_mode and w < 90 else (len(rows)+1)//2
         legend_start = h-5-max(1,legend_rows)
         map_height = max(6,legend_start-6)
         title = (sim.orbit_focus.name + " AROUND " + sim.orbit_focus.parent).upper() if sim.orbit_focus else sim.view.upper()
@@ -191,7 +193,7 @@ def tui(screen, sim, no_color=False):
         if sim.orbit_focus is None:
             write(3,27,"[number] = body / numbers on paths identify orbits",8)
         panes = [(2,w-4,sim.view)]
-        if sim.camera.name=='system' and sim.view == "solar" and w >= 108:
+        if sim.camera.name=='system' and sim.view == "solar" and w >= 108 and not sim.proxima_mode:
             pane_width = (w-6)//2
             panes = [(2,pane_width,"inner"),(pane_width+4,pane_width,"outer")]
         for x,width,view in panes:
@@ -208,10 +210,11 @@ def tui(screen, sim, no_color=False):
             y = legend_start+index%max(1,legend_rows)
             x = 2+column*(w//2)
             marker = sim.orbit_number(body,index+1)
-            distance_text = f"{distance/AU_KM:.3f} AU" if body.parent == "Sun" else f"{distance:,.0f} km"
-            source_text = "JPL" if source.startswith("JPL") else "approx"
-            write(y,x,f"[{marker}] {body.name:<10} {distance_text:>13} {source_text}",palette[(marker-1)%len(palette)],True)
-        hint = "/dwarf exit normal planets · /satellites ceres · /moons pluto" if sim.dwarf_mode else "/iss focus ISS · /satellites mars spacecraft · /moons jupiter moons · Esc overview"
+            distance_text = f"{distance/AU_KM:.3f} AU" if body.parent in ("Sun", "Proxima Centauri") else f"{distance:,.0f} km"
+            source_text = "model" if sim.proxima_mode else "JPL" if source.startswith("JPL") else "approx"
+            display_name = body.name.replace('Proxima Centauri ', 'Proxima ') if sim.proxima_mode else body.name
+            write(y,x,f"[{marker}] {display_name:<10} {distance_text:>13} {source_text}",palette[(marker-1)%len(palette)],True)
+        hint = "/proxima b · /proxima d · /proxima exit · Illustrative phases" if sim.proxima_mode else "/dwarf exit normal planets · /satellites ceres · /moons pluto" if sim.dwarf_mode else "/iss focus ISS · /satellites mars spacecraft · /moons jupiter moons · Esc overview"
         write(h-5,2,sim.orbit_notice or hint,3 if sim.orbit_notice else 8)
 
     def draw_mission(h,w):
@@ -314,7 +317,7 @@ def tui(screen, sim, no_color=False):
             write(0,max(50,w-19),f"● {state}   /help",3 if sim.paused else 2,True)
             write(1,2,f"{sim.date:%Y-%m-%d %H:%M:%S} UTC",7)
             rate = "REAL TIME / 1x" if sim.clock_mode == "realtime" else f"{sim.speed:g} days/sec"
-            write(1,30,f"Historical replay / {sim.mission.flight.name}" if sim.mission else f"{rate}  ·  {sim.ephemeris.message}",8)
+            write(1,30,f"Historical replay / {sim.mission.flight.name}" if sim.mission else f"{rate}  ·  "+('Proxima / illustrative phases' if sim.proxima_mode else sim.ephemeris.message),8)
             rule(2)
 
             # Overview replaces the former miniature orbit map.
@@ -325,7 +328,8 @@ def tui(screen, sim, no_color=False):
             write(5,3,"BODY          DISTANCE FROM PARENT       POSITION SOURCE",8)
             for index,(_,body,distance,source) in enumerate(sim.position_rows()[:max(1,map_end-8)]):
                 short_source = "JPL Horizons" if source.startswith("JPL") else "approximate" if body in PLANETS else "illustrative"
-                write(7+index,3,f"{body.name:<12} {distance:>17,.0f} km   {short_source}",body.color)
+                display_name = body.name.replace('Proxima Centauri ', 'Proxima ') if sim.proxima_mode else body.name
+                write(7+index,3,f"{display_name:<12} {distance:>17,.0f} km   {short_source}",body.color)
             if split != w:
                 for y in range(3,map_end):
                     write(y,split,"│",8)
@@ -339,7 +343,14 @@ def tui(screen, sim, no_color=False):
                     card = [b.kind, "", f"Diameter   {2*b.radius:,.1f} km", f"Mass       {b.mass:.4g} kg",
                             f"Gravity    {b.gravity:.3g} m/s²", f"Parent     {b.parent or '—'}",
                             'Solar day  '+day_label(b)]
-                if b.kind not in ("Natural satellite","Artificial satellite") and b is not lookup("sun"):
+                if sim.proxima_mode:
+                    card = [b.kind, '', f'Radius ~{b.radius:,.0f} km (estimate)', f'Mass ~{b.mass:.4g} kg',
+                            'RV minimum mass' if b.parent else 'Rounded stellar estimate',
+                            f'Orbit {b.period:g} days' if b.parent else 'Rotation ~83 days',
+                            'Day length unknown' if b.parent else 'Solar day not applicable',
+                            'No confirmed moons' if b.parent else 'Two confirmed planets',
+                            'Illustrative orbital phase']
+                elif b.kind not in ("Natural satellite","Artificial satellite") and b is not lookup("sun"):
                     card += [f"Moons      {b.known_moons} known", f"Profiles   {len(satellites(b.name))} included"]
                 elif b.period:
                     card += [f"Orbit      {b.period:.4g} days"]
@@ -570,12 +581,16 @@ def main():
     parser.add_argument("-c","--command",action="append",help="Execute a slash command and exit; may be repeated")
     modes=parser.add_mutually_exclusive_group()
     modes.add_argument('-u','--update',action='store_true',help='Download and install the latest stable GitHub release, then exit')
+    modes.add_argument('-m','--mod',help='Install/update a system mod, e.g. -m"proxima centauri", then exit')
     modes.add_argument('--tutorial',action='store_true',help='Print the getting-started tutorial and exit')
     root=Path(__file__).resolve().parent
     parser.add_argument('--version',action='version',version='Solar Sim '+(root/'VERSION.txt').read_text().strip())
     args = parser.parse_args()
-    if args.update or args.tutorial:
-        if args.command:parser.error('Use --update or --tutorial without -c commands.')
+    if args.update or args.tutorial or args.mod is not None:
+        if args.command:parser.error('Use --update, --tutorial or --mod without -c commands.')
+        if args.mod is not None:
+            from mod_manager import install_cli
+            return install_cli(root,args.mod,offline=args.offline)
         if args.update:
             if args.offline:parser.error('Updating needs internet; omit --offline.')
             from updater import update_cli

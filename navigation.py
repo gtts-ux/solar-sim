@@ -30,9 +30,10 @@ class Page:
 
 def body_item(body):
     dwarf = body in DWARF_PLANETS or lookup(body.parent or '') in DWARF_PLANETS
+    proxima = body.name.startswith('Proxima Centauri')
     name = shlex.quote(body.name)
     def action(label, command, detail):
-        return Item(label, detail, command if isinstance(command,tuple) else (command,), catalogue='dwarf' if dwarf else 'planets')
+        return Item(label, detail, command if isinstance(command,tuple) else (command,), catalogue='proxima' if proxima else 'dwarf' if dwarf else 'planets')
     actions = [action('Profile', ('/back','/'+name), 'Size, mass, composition, history and references.'),
                action('Orbit view', '/orbit '+name, 'Open the numbered orbit map around this object.')]
     if not isinstance(body, Spacecraft):
@@ -45,7 +46,7 @@ def body_item(body):
 
 
 class Navigation:
-    sections = ('Views', 'Planets', 'Moons', 'Spacecraft', 'Dwarfs', 'Missions', 'Settings', 'Clock', 'Live')
+    sections = ('Views', 'Planets', 'Moons', 'Spacecraft', 'Dwarfs', 'Missions', 'Settings', 'Clock', 'Live', 'Mods')
 
     def __init__(self):
         self.opened = False
@@ -101,8 +102,11 @@ class Navigation:
                     Item('About the simulation', 'Data sources and model accuracy.', ('/info',)),
                     Item('Export snapshot', 'Save the current simulation to exports/.', ('/export',)),
                     Item('Quit', 'Close the observatory.', ('/quit',)))
+        if section == 'Mods':
+            return (Item('Proxima Centauri', 'Install in terminal: sol-sim -m"proxima centauri". Enter opens an installed mod.', ('/proxima centauri',)),
+                    Item('Return to Solar System', 'Leave the Proxima catalogue.', ('/proxima exit',)))
         if section in ('Planets', 'Moons', 'Spacecraft', 'Dwarfs'):
-            bodies = {'Planets': (SUN,*PLANETS), 'Moons': tuple(b for b in MOONS if b in sim.visible_bodies),
+            bodies = {'Planets': tuple(sim.proxima_bodies) if sim.proxima_mode else (SUN,*PLANETS), 'Moons': tuple(b for b in MOONS if b in sim.visible_bodies),
                       'Spacecraft': tuple(b for b in SPACECRAFT if b in sim.visible_bodies), 'Dwarfs': DWARF_PLANETS}[section]
             entries = tuple(body_item(body) for body in bodies)
             if section == 'Dwarfs':
@@ -180,7 +184,13 @@ class Navigation:
         if '/back' in commands:
             # Overview/profile actions leave the overlay and the underlying view.
             sim.overlay = None
-        if item.catalogue and (item.catalogue=='dwarf') != sim.dwarf_mode:
+        if item.catalogue == 'proxima' and not sim.proxima_mode:
+            commands = ('/proxima centauri',)+commands
+        elif item.catalogue == 'planets' and sim.proxima_mode:
+            commands = ('/proxima exit',)+commands
+        elif item.catalogue == 'dwarf' and sim.proxima_mode:
+            commands = ('/dwarf',)+commands
+        elif item.catalogue and item.catalogue != 'proxima' and (item.catalogue=='dwarf') != sim.dwarf_mode:
             commands = ('/dwarf' if item.catalogue=='dwarf' else '/dwarf exit',)+commands
         if item.live_id:
             matches = [i for i,launch in enumerate(sim.live_entries,1) if launch.id==item.live_id]

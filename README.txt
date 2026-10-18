@@ -707,3 +707,44 @@ data even with --offline. The provider is not contacted until /live is
 requested. Plain mode prints snapshots: submit /live again after the
 background fetch finishes. -c '/live' waits up to 30 seconds for a snapshot.
 settings.json and launch_cache.json are excluded from Git and ZIP builds.
+
+PROXIMA CENTAURI MOD / v1.7.0
+=============================
+
+Install from Terminal after quitting the app:
+
+    sol-sim -m"proxima centauri"
+    sol-sim
+
+Inside Solar Sim:
+
+    /proxima centauri
+    /planet
+    /orbit
+    /proxima b
+    /compare "proxima b" "proxima d"
+    /proxima exit
+
+/proxima centari is also accepted. /star opens Proxima Centauri. The arrow
+menu has a Mods section. /dwarf switches directly to the dwarf catalogue.
+/proxima exit returns to normal planets. Each app copy installs its own mod.
+
+The package includes the star and confirmed planets d and b. Proxima c is an
+unconfirmed candidate (use /proxima c), excluded from orbits. This is a local
+star-centered system with published sizes and periods, but arbitrary orbital
+phases and planes, not observed current positions. Comparisons use this local
+illustrative geometry; distances to Solar System objects are not modeled.
+Radii are estimates, masses are RV minimum masses; planetary day lengths,
+atmospheres, composition, rings and moon existence are unknown. There are no
+confirmed moons or spacecraft included. Alpha Centauri A/B are not modeled.
+
+The installer tries gtts-ux/proxima-centauri-mod, falling back to the bundled
+package if unavailable; its message identifies the source. Use this to install
+without a network request:
+
+    sol-sim --offline -m"proxima centauri"
+
+Only validated JSON data is loaded; no mod code runs. Installed data is in
+mods/proxima-centauri.json. Re-run -m to update; sol-sim -u preserves mods/.
+To uninstall, leave Proxima mode and delete that JSON file. /sources in Proxima
+mode lists references; see GETTING_STARTED.txt for the updated tutorial.

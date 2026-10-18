@@ -99,4 +99,33 @@ GET STARTED WITH SOL-SIM
    If an older copy does not recognize -u, download the latest ZIP once.
    A failed download or invalid package leaves the installed app unchanged.
 
+7. INSTALL A SYSTEM MOD (v1.7.0 OR NEWER)
+
+   Quit the app, then in Terminal:
+
+       sol-sim -m"proxima centauri"
+       sol-sim
+
+   Inside Solar Sim:
+
+       /proxima centauri
+       /planet
+       /orbit
+       /proxima b
+       /compare "proxima b" "proxima d"
+       /proxima exit
+
+   /proxima centari works too. The arrow menu also has a Mods section.
+   Proxima has its own separate catalogue, like /dwarf. /dwarf switches to
+   dwarfs; /proxima exit restores normal planets. /star opens the host star.
+   Orbits use published periods/sizes but illustrative phases, not current
+   observed positions. Days and moons are unknown; radii are estimates and
+   masses are minimum masses. /proxima c explains the unconfirmed candidate.
+   The installer uses the bundled package if its separate repository cannot
+   be reached, and tells you which source was used. To skip the network:
+
+       sol-sim --offline -m"proxima centauri"
+
+   Re-run -m to update mod data. App updates preserve the mods/ folder.
+
 Read /tutorial inside the app, or GETTING_STARTED.txt in the app folder.

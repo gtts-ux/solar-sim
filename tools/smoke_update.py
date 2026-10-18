@@ -28,8 +28,16 @@ def main():
         result=subprocess.run([sys.executable,str(root/'solar_sim.py'),'--offline','-c','/planet'],capture_output=True,text=True,timeout=20)
         assert result.returncode==0,result.stderr
         assert '/neptune' in result.stdout
+        install=subprocess.run([sys.executable,str(root/'solar_sim.py'),'--offline','-mproxima centauri'],capture_output=True,text=True,timeout=20)
+        assert install.returncode==0,install.stderr+install.stdout
+        result=subprocess.run([sys.executable,str(root/'solar_sim.py'),'--offline','-c','/proxima centari','-c','/orbit','-c','/compare "proxima b" "proxima d"','-c','/proxima exit'],capture_output=True,text=True,timeout=20)
+        assert result.returncode==0,result.stderr
+        assert 'Could not run command' not in result.stdout,result.stdout
+        assert 'Proxima Centauri d' in result.stdout
+        installed=(root/'mods/proxima-centauri.json').read_bytes()
         assert run_update(root,fetch=published) is None
-    print('Published ZIP/checksum downloaded successfully; upgrade, saved settings, startup and repeat check passed.')
+        assert (root/'mods/proxima-centauri.json').read_bytes()==installed
+    print('Published ZIP/checksum downloaded successfully; upgrade, saved settings, Proxima installation/orbits/comparison and repeat check passed.')
 
 
 if __name__=='__main__':main()

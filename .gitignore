@@ -12,6 +12,7 @@ launch_cache.json.*.tmp
 settings.json
 settings.json.*.tmp
 exports/
+mods/
 update-backups/
 .solar-sim-update.lock
 .solar-sim-stage-*/

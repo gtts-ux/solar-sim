@@ -195,3 +195,17 @@ https://science.nasa.gov/solar-system/why-uranus-and-neptune-are-different-color
 
 These are self-contained, hand-painted procedural textures with exaggerated
 contrast and accelerated visual spin, not planetary maps or live weather.
+
+PROXIMA CENTAURI MOD / checked 2026-10-18
+Optional separate system; installed by sol-sim -m"proxima centauri".
+NASA planet tables: b (minimum mass 1.055 Earths, estimate radius 1.02 Earths,
+0.04848 AU, 11.2 days); d (0.26 Earths, estimate radius 0.692 Earths,
+0.02881 AU, 5.1 days). Circular orbital geometry is illustrative, not a
+measured phase/plane or a present-day ephemeris. Rotation and moons unknown.
+https://science.nasa.gov/exoplanet-catalog/proxima-centauri-b/
+https://science.nasa.gov/exoplanet-catalog/proxima-centauri-d/
+Proxima c is a candidate, not a confirmed planet (Archive updated 2026-10-14).
+https://exoplanetarchive.ipac.caltech.edu/docs/removed_targets.html
+Star: rounded 0.12 solar masses, 0.14 solar radii, 3050 K, 83-day rotation
+from Anglada-Escude et al. 2016 (values are dated rounded approximations).
+https://arxiv.org/abs/1609.03449

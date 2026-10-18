@@ -1,0 +1,60 @@
+{
+  "format": 1,
+  "id": "proxima-centauri",
+  "version": "1.0.0",
+  "app_min": "1.7.0",
+  "frame": "Proxima Centauri centered; illustrative orbital phases",
+  "sources": [
+    "https://science.nasa.gov/exoplanet-catalog/proxima-centauri-b/",
+    "https://science.nasa.gov/exoplanet-catalog/proxima-centauri-d/",
+    "https://exoplanetarchive.ipac.caltech.edu/docs/removed_targets.html",
+    "https://arxiv.org/abs/1609.03449"
+  ],
+  "bodies": [
+    {
+      "name": "Proxima Centauri",
+      "kind": "M dwarf star",
+      "parent": null,
+      "mass": 2.3862e29,
+      "radius": 97398,
+      "orbit": 0,
+      "period": 0,
+      "rotation": 1992,
+      "temperature": "Approximately 3050 K effective temperature.",
+      "composition": "Hydrogen and helium dominated plasma; hydrogen fusion supplies its energy.",
+      "atmosphere": "A magnetically active stellar atmosphere; flares can expose nearby planets to radiation.",
+      "features": "Nearest stellar neighbor, about 4.24 light-years from the Sun. Alpha Centauri C. Stellar mass (~0.12 solar), radius (~0.14 solar) and rotation (~83 days) are rounded from the 2016 discovery paper. Alpha Centauri A and B are outside this local model.",
+      "color": 1
+    },
+    {
+      "name": "Proxima Centauri d",
+      "kind": "Exoplanet",
+      "parent": "Proxima Centauri",
+      "mass": 1.552772e24,
+      "radius": 4408.732,
+      "orbit": 4309914.655867,
+      "period": 5.1,
+      "rotation": 0,
+      "temperature": "Surface temperature unknown; the planet is close to its active host star.",
+      "composition": "Unknown. Its low minimum mass is consistent with a rocky planet; no measured interior composition.",
+      "atmosphere": "Unknown; no atmosphere is established by this catalogue.",
+      "features": "Confirmed planet in NASA's current catalogue. Minimum mass (RV m sin i): about 0.26 Earth masses. Radius 0.692 Earth radii is an estimate, not a measured size. Rotation, surface conditions, rings and moons are unknown. No confirmed moons or spacecraft. The 2022 candidate was confirmed in 2025.",
+      "color": 3
+    },
+    {
+      "name": "Proxima Centauri b",
+      "kind": "Exoplanet",
+      "parent": "Proxima Centauri",
+      "mass": 6.300671e24,
+      "radius": 6498.42,
+      "orbit": 7252504.771536,
+      "period": 11.2,
+      "rotation": 0,
+      "temperature": "Surface temperature unknown; equilibrium temperature is not a measured surface temperature.",
+      "composition": "Unknown. Minimum mass is near Earth's; rocky composition is plausible but unmeasured.",
+      "atmosphere": "Unknown; atmosphere, oceans and life are not established.",
+      "features": "Confirmed planet discovered in 2016, in the star's temperate zone. This does not establish habitability. Minimum mass (RV m sin i): about 1.055 Earth masses. Radius 1.02 Earth radii is an estimate, not a measured size. Rotation and solar day are unknown; tidal locking is a possibility. No confirmed moons or spacecraft.",
+      "color": 4
+    }
+  ]
+}

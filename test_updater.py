@@ -34,7 +34,8 @@ class UpdaterTests(unittest.TestCase):
         self.original={'VERSION.txt':b'0.1.0\n','solar_sim.py':b'# my previous app source\n',
                        'settings.json':b'{"theme":"amber","screensaver":"saturn"}',
                        'launch_cache.json':b'launch cache','ephemeris_cache.json':b'astronomy cache',
-                       'exports/keep.json':b'export data','.git/config':b'git metadata','notes.txt':b'personal notes'}
+                       'exports/keep.json':b'export data','mods/proxima-centauri.json':b'installed mod data',
+                       '.git/config':b'git metadata','notes.txt':b'personal notes'}
         for name,data in self.original.items():
             path=self.root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(data)
         self.messages=[]
@@ -103,7 +104,7 @@ class UpdaterTests(unittest.TestCase):
         self.assertFalse((self.root/'update-backups').exists())
 
     def test_malicious_paths_symlinks_missing_files_and_invalid_code_are_rejected_before_install(self):
-        cases=(('../outside.txt',b'bad',None),('settings.json',b'bad',None),
+        cases=(('../outside.txt',b'bad',None),('settings.json',b'bad',None),('mods/proxima-centauri.json',b'bad',None),
                ('Engine.py',b'case collision',None),('link',b'../outside',stat.S_IFLNK|0o777),
                ('VERSION.txt',b'9.9.9',None),('engine.py',b'def invalid(:',None),
                ('RELEASE_MANIFEST.json',b'{}',None))
