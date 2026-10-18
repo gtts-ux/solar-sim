@@ -209,3 +209,16 @@ https://exoplanetarchive.ipac.caltech.edu/docs/removed_targets.html
 Star: rounded 0.12 solar masses, 0.14 solar radii, 3050 K, 83-day rotation
 from Anglada-Escude et al. 2016 (values are dated rounded approximations).
 https://arxiv.org/abs/1609.03449
+
+INTERSTELLAR MOD / fictional catalogue
+Film: Interstellar (2014), Christopher Nolan. Unofficial fan-made schematic.
+https://www.paramount.com/movies/interstellar
+Black-hole science/visual-effects background: James, von Tunzelmann, Franklin
+and Thorne, Classical and Quantum Gravity 32 (2015) 065001.
+https://authors.library.caltech.edu/records/njdcq-95891
+Kip Thorne's discussion of Miller's world and the ~100-million-Sun interpretation:
+https://www.its.caltech.edu/~kip/index.html/PubScans/VI-59.pdf
+These references do not provide this mod's invented planetary masses, radii,
+orbital radii or animation cycles. All are labeled mod-authored model choices.
+The three worlds share a schematic drawing center, not an asserted physical
+host-star layout. No Kerr dynamics, lensing or time dilation are solved.

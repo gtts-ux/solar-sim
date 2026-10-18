@@ -128,4 +128,30 @@ GET STARTED WITH SOL-SIM
 
    Re-run -m to update mod data. App updates preserve the mods/ folder.
 
+8. EXPLORE INTERSTELLAR (v1.8.0 OR NEWER)
+
+   Quit the app, then in Terminal:
+
+       sol-sim -m"interstellar"
+       sol-sim
+
+   Inside the app:
+
+       /interstellar
+       /planet
+       /orbit
+       /scale fit
+       /miller
+       /gargantua
+       /compare miller mann
+       /interstellar exit
+
+   This separate film catalogue includes Gargantua, Miller, Mann and Edmunds.
+   Use arrows to navigate the Mods menu, or Left/Right to zoom in orbit mode.
+   /proxima centauri switches to an installed Proxima mod; /dwarf opens dwarfs.
+   The layout, numeric planet values and motion are fictional model choices,
+   not canonical measurements. Relativistic time dilation is not simulated.
+   /sources explains the film/science background. Existing screensavers stay
+   independent of the catalogue. App updates preserve both installed mods.
+
 Read /tutorial inside the app, or GETTING_STARTED.txt in the app folder.

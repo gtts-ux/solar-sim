@@ -1,0 +1,74 @@
+{
+  "format": 1,
+  "id": "interstellar",
+  "version": "1.0.0",
+  "app_min": "1.8.0",
+  "frame": "Fictional Gargantua centered; schematic film-system layout",
+  "sources": [
+    "https://www.paramount.com/movies/interstellar",
+    "https://authors.library.caltech.edu/records/njdcq-95891",
+    "https://www.its.caltech.edu/~kip/index.html/PubScans/VI-59.pdf"
+  ],
+  "bodies": [
+    {
+      "name": "Gargantua",
+      "kind": "Fictional black hole",
+      "parent": null,
+      "mass": 1.9885e38,
+      "radius": 147700000,
+      "orbit": 0,
+      "period": 0,
+      "rotation": 0,
+      "temperature": "The black hole has no planetary surface. The film depicts bright accretion gas outside it.",
+      "composition": "A fictional spinning supermassive black hole, not a ball of rocky or gaseous material.",
+      "atmosphere": "No planetary atmosphere; the surrounding accretion flow is separate from the black hole.",
+      "features": "Interstellar's Gargantua. Kip Thorne's film-science interpretation uses about 100 million solar masses. The radius here is a rounded GM/c^2 drawing scale, not a measured horizon. No Kerr geodesics, gravitational lensing, accretion physics or time dilation are solved by this orbit map. Existing screensaver preferences are independent of this mod.",
+      "color": 3
+    },
+    {
+      "name": "Miller",
+      "kind": "Fictional planet",
+      "parent": "Gargantua",
+      "mass": 5.9722e24,
+      "radius": 6371,
+      "orbit": 165000000,
+      "period": 1,
+      "rotation": 0,
+      "temperature": "An ocean world in the story; no measured numerical surface temperature.",
+      "composition": "The film shows shallow water and enormous waves; detailed interior and bulk composition are unspecified.",
+      "atmosphere": "The film's environment is described qualitatively; this mod invents no gas fractions or pressure.",
+      "features": "Miller's water-covered world near Gargantua. The story describes one hour there as seven years on Earth. This is a story note, not a simulated clock conversion. Planetary mass, radius, orbital radius and animation cycle in this file are invented placeholders for a readable schematic, not canonical film measurements or a relativistic solution. Rotation, rings and moons are unspecified.",
+      "color": 4
+    },
+    {
+      "name": "Mann",
+      "kind": "Fictional planet",
+      "parent": "Gargantua",
+      "mass": 4e24,
+      "radius": 5600,
+      "orbit": 450000000,
+      "period": 3,
+      "rotation": 0,
+      "temperature": "A frozen, hostile world in the story; no measured numerical temperature.",
+      "composition": "Icy terrain and cloud layers feature in the film; detailed interior composition is unspecified.",
+      "atmosphere": "Hostile to unprotected human life in the story; exact composition and pressure are unspecified here.",
+      "features": "Dr. Mann's icy world. His favorable survey cannot be treated as reliable habitability evidence. Planetary mass, radius, orbital radius and animation cycle are invented mod placeholders, not canonical measurements. No moons, spacecraft trajectories or quantitative day length are included.",
+      "color": 7
+    },
+    {
+      "name": "Edmunds",
+      "kind": "Fictional planet",
+      "parent": "Gargantua",
+      "mass": 6.4e24,
+      "radius": 6800,
+      "orbit": 1800000000,
+      "period": 12,
+      "rotation": 0,
+      "temperature": "A rocky, desert-like world shown near the story's conclusion; no measured numerical temperature.",
+      "composition": "Rocky terrain is shown; interior structure and detailed chemistry are unspecified.",
+      "atmosphere": "Presented as a promising settlement environment in the film; exact atmospheric chemistry is unspecified.",
+      "features": "Wolf Edmunds' world, associated with the settlement plan at the film's conclusion. Its placement on this Gargantua-centered map is schematic, not a claim about a direct black-hole orbit or the physical host-star arrangement. Planetary mass, radius, orbital radius and animation cycle are invented placeholders. Moon existence and day length are unspecified.",
+      "color": 2
+    }
+  ]
+}

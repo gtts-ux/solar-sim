@@ -35,9 +35,17 @@ def main():
         assert 'Could not run command' not in result.stdout,result.stdout
         assert 'Proxima Centauri d' in result.stdout
         installed=(root/'mods/proxima-centauri.json').read_bytes()
+        install=subprocess.run([sys.executable,str(root/'solar_sim.py'),'--offline','-minterstellar'],capture_output=True,text=True,timeout=20)
+        assert install.returncode==0,install.stderr+install.stdout
+        result=subprocess.run([sys.executable,str(root/'solar_sim.py'),'--offline','-c','/interstellar','-c','/orbit','-c','/mann','-c','/compare miller mann','-c','/proxima centari','-c','/interstellar','-c','/interstellar exit'],capture_output=True,text=True,timeout=20)
+        assert result.returncode==0,result.stderr
+        assert 'Could not run command' not in result.stdout,result.stdout
+        assert 'FICTIONAL MODEL' in result.stdout
+        film=(root/'mods/interstellar.json').read_bytes()
         assert run_update(root,fetch=published) is None
         assert (root/'mods/proxima-centauri.json').read_bytes()==installed
-    print('Published ZIP/checksum downloaded successfully; upgrade, saved settings, Proxima installation/orbits/comparison and repeat check passed.')
+        assert (root/'mods/interstellar.json').read_bytes()==film
+    print('Published ZIP/checksum downloaded successfully; upgrade, saved settings, Proxima and Interstellar installation/orbits/comparison and repeat check passed.')
 
 
 if __name__=='__main__':main()

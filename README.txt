@@ -748,3 +748,45 @@ Only validated JSON data is loaded; no mod code runs. Installed data is in
 mods/proxima-centauri.json. Re-run -m to update; sol-sim -u preserves mods/.
 To uninstall, leave Proxima mode and delete that JSON file. /sources in Proxima
 mode lists references; see GETTING_STARTED.txt for the updated tutorial.
+
+INTERSTELLAR MOD / v1.8.0
+=========================
+
+In Terminal (outside the app):
+
+    sol-sim -m"interstellar"
+    sol-sim
+
+Inside Solar Sim:
+
+    /interstellar
+    /planet
+    /orbit
+    /scale fit
+    /miller
+    /mann
+    /edmunds
+    /gargantua
+    /compare miller mann
+    /interstellar exit
+
+The Mods arrow menu includes Interstellar. Orbit-mode Left/Right zooms around
+the selected body. /interstellar exit restores normal planets; /dwarf switches
+to dwarfs; /proxima centauri opens an installed Proxima mod. Each catalogue
+keeps its own coordinates; cross-system distances are not modeled.
+
+This is a fictional film-inspired schematic. Planet masses, radii, orbital
+radii and animation periods are invented placeholders, labeled in profiles
+and exports. The model groups the three worlds around Gargantua for browsing,
+without claiming a physical host-star arrangement. UTC animates the model;
+Kerr orbits, time dilation, lensing and accretion physics are not integrated.
+Miller's film time-dilation ratio is a story note. Distance/c is only a flat-
+space illustration, not a relativistic travel time. Days, moons and detailed
+atmospheric measurements are left unspecified. Screensavers are independent.
+
+Repository: https://github.com/gtts-ux/interstellar-mod
+The installer uses that repository, with a clearly identified bundled fallback.
+Use sol-sim --offline -m"interstellar" to skip the network. Installed data lives
+in mods/interstellar.json and survives sol-sim -u. Re-run -m to update it.
+/sources in this mode lists the film and scientific background. See also the
+updated GETTING_STARTED.txt tutorial.

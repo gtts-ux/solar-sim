@@ -71,6 +71,21 @@ The installer tries the separate `gtts-ux/proxima-centauri-mod` repository, then
 
 These are illustrative local, star-centered orbits using published scales and periods; phases and planes are arbitrary, **not current observed positions**. Planet masses are RV minimum masses; radii are estimates. Days, atmospheres, composition and moons are unknown. Proxima c remains a candidate and is described by `/proxima c` without a simulated orbit. `/sources` in this mode gives the NASA and research references. Distances between the Solar and Proxima systems are not modeled. Alpha Centauri A/B are outside this local model.
 
+## Interstellar mod
+
+For the fictional system from *Interstellar* (2014), update to v1.8.0 or newer and run:
+
+```sh
+sol-sim -m"interstellar"
+sol-sim
+```
+
+Inside the app, use `/interstellar`, `/planet`, `/orbit`, `/gargantua`, `/miller`, `/mann` and `/edmunds`. `/compare miller mann` shows profiles and the separation in the model; `/interstellar exit` restores normal planets. `/proxima centauri` switches to an installed Proxima mod, and `/dwarf` switches to dwarfs. The arrow menu includes Interstellar under **Mods**. In orbit mode Left/Right changes zoom; `/scale fit` spreads orbits for readability.
+
+The package lives in [interstellar-mod](https://github.com/gtts-ux/interstellar-mod). The installer uses that repository first, with an identified bundled fallback; `--offline -m"interstellar"` installs without internet. Installed mods remain separate and survive app updates.
+
+This is a **fictional schematic**, with film-inspired descriptions and explicitly invented planetary masses, radii, distances and animation cycles. The three worlds share a Gargantua-centered drawing frame; this does not establish their physical host-star arrangements. UTC controls animation; the map does not solve Kerr orbits, lensing or time dilation. The flat-space distance/c illustration is not a relativistic travel time. Unknown days, moons and atmospheric measurements are left unspecified. Screensaver selections are independent of this mod. `/sources` links the film and scientific background.
+
 ## Try it
 
 ```text

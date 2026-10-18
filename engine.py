@@ -364,7 +364,7 @@ COMMANDS = ["mission", "missions", "day", "satellites", "satellite", "dwarf", "m
             "now", "reset", "scale", "labels", "trails", "export", "info", "sources", "help", "clear", "quit", "exit"]
 
 
-COMMANDS = ['proxima','tutorial','menu','setting','settings','camera','live'] + COMMANDS
+COMMANDS = ['interstellar','proxima','tutorial','menu','setting','settings','camera','live'] + COMMANDS
 
 
 class SolarSimulation:
@@ -412,7 +412,7 @@ class SolarSimulation:
         if not self.paused:
             self.set_date(datetime.now(UTC) if self.clock_mode == "realtime" else
                           self.date + timedelta(days=elapsed * self.speed), clamp=True)
-        if self.clock_mode == "realtime" and not self.proxima_mode:
+        if self.clock_mode == "realtime" and not self.mod_mode:
             self.ephemeris.ensure(self.date)
 
     def set_date(self, date, clamp=False):
@@ -1045,7 +1045,9 @@ class SolarSimulation:
             if self.system_filter == "spacecraft":
                 message = "No confirmed current spacecraft orbiters in this catalogue."
             else:
-                message = 'No confirmed moons; existence is unknown.' if self.proxima_mode else f"{center.name} has no moons." if not center.known_moons else f"{center.known_moons} known moons; no orbits included."
+                message = ('No moons specified in the film; none included.' if self.interstellar_mode else
+                           'No confirmed moons; existence is unknown.' if self.proxima_mode else
+                           f"{center.name} has no moons." if not center.known_moons else f"{center.known_moons} known moons; no orbits included.")
             put(max(0,cx-len(message)/2),min(height-1,cy+2),message,3,True)
         return cells
 

@@ -44,6 +44,8 @@ def completions(line, sim=None):
         return []
     if line.startswith('/proxima '):
         return [value for value in ('/proxima centauri','/proxima centari','/proxima exit','/proxima b','/proxima d','/proxima c') if value.startswith(line.lower())]
+    if line.startswith('/interstellar '):
+        return [value for value in ('/interstellar exit','/interstellar miller','/interstellar mann','/interstellar edmunds','/interstellar gargantua') if value.startswith(line.lower())]
     if line.startswith('/mission '):
         tail=line[len('/mission '):]
         prefix='/mission '
@@ -183,7 +185,7 @@ def tui(screen, sim, no_color=False):
             write(h-5,2,'Left/Right camera / /camera system restores the original numbered orbit view',8)
             return
         rows = sim.position_rows()
-        legend_rows = len(rows) if sim.proxima_mode and w < 90 else (len(rows)+1)//2
+        legend_rows = len(rows) if sim.mod_mode and w < 90 else (len(rows)+1)//2
         legend_start = h-5-max(1,legend_rows)
         map_height = max(6,legend_start-6)
         title = (sim.orbit_focus.name + " AROUND " + sim.orbit_focus.parent).upper() if sim.orbit_focus else sim.view.upper()
@@ -193,7 +195,7 @@ def tui(screen, sim, no_color=False):
         if sim.orbit_focus is None:
             write(3,27,"[number] = body / numbers on paths identify orbits",8)
         panes = [(2,w-4,sim.view)]
-        if sim.camera.name=='system' and sim.view == "solar" and w >= 108 and not sim.proxima_mode:
+        if sim.camera.name=='system' and sim.view == "solar" and w >= 108 and not sim.mod_mode:
             pane_width = (w-6)//2
             panes = [(2,pane_width,"inner"),(pane_width+4,pane_width,"outer")]
         for x,width,view in panes:
@@ -210,11 +212,11 @@ def tui(screen, sim, no_color=False):
             y = legend_start+index%max(1,legend_rows)
             x = 2+column*(w//2)
             marker = sim.orbit_number(body,index+1)
-            distance_text = f"{distance/AU_KM:.3f} AU" if body.parent in ("Sun", "Proxima Centauri") else f"{distance:,.0f} km"
-            source_text = "model" if sim.proxima_mode else "JPL" if source.startswith("JPL") else "approx"
+            distance_text = f"{distance/AU_KM:.3f} AU" if body.parent in ("Sun", "Proxima Centauri", "Gargantua") else f"{distance:,.0f} km"
+            source_text = "fiction" if sim.interstellar_mode else "model" if sim.mod_mode else "JPL" if source.startswith("JPL") else "approx"
             display_name = body.name.replace('Proxima Centauri ', 'Proxima ') if sim.proxima_mode else body.name
             write(y,x,f"[{marker}] {display_name:<10} {distance_text:>13} {source_text}",palette[(marker-1)%len(palette)],True)
-        hint = "/proxima b · /proxima d · /proxima exit · Illustrative phases" if sim.proxima_mode else "/dwarf exit normal planets · /satellites ceres · /moons pluto" if sim.dwarf_mode else "/iss focus ISS · /satellites mars spacecraft · /moons jupiter moons · Esc overview"
+        hint = sim.mod_hint if sim.mod_mode else "/dwarf exit normal planets · /satellites ceres · /moons pluto" if sim.dwarf_mode else "/iss focus ISS · /satellites mars spacecraft · /moons jupiter moons · Esc overview"
         write(h-5,2,sim.orbit_notice or hint,3 if sim.orbit_notice else 8)
 
     def draw_mission(h,w):
@@ -317,7 +319,8 @@ def tui(screen, sim, no_color=False):
             write(0,max(50,w-19),f"● {state}   /help",3 if sim.paused else 2,True)
             write(1,2,f"{sim.date:%Y-%m-%d %H:%M:%S} UTC",7)
             rate = "REAL TIME / 1x" if sim.clock_mode == "realtime" else f"{sim.speed:g} days/sec"
-            write(1,30,f"Historical replay / {sim.mission.flight.name}" if sim.mission else f"{rate}  ·  "+('Proxima / illustrative phases' if sim.proxima_mode else sim.ephemeris.message),8)
+            mod_label = 'Interstellar / fictional model' if sim.interstellar_mode else 'Proxima / illustrative phases'
+            write(1,30,f"Historical replay / {sim.mission.flight.name}" if sim.mission else f"{rate}  ·  "+(mod_label if sim.mod_mode else sim.ephemeris.message),8)
             rule(2)
 
             # Overview replaces the former miniature orbit map.
@@ -343,7 +346,13 @@ def tui(screen, sim, no_color=False):
                     card = [b.kind, "", f"Diameter   {2*b.radius:,.1f} km", f"Mass       {b.mass:.4g} kg",
                             f"Gravity    {b.gravity:.3g} m/s²", f"Parent     {b.parent or '—'}",
                             'Solar day  '+day_label(b)]
-                if sim.proxima_mode:
+                if sim.interstellar_mode:
+                    card = [b.kind, '', 'FICTIONAL MODEL',
+                            f'Drawing radius ~{b.radius:,.0f} km',
+                            f'Cycle {b.period:g} model days' if b.parent else 'Kerr black hole in the film',
+                            'Solar day unspecified' if b.parent else 'No planetary surface',
+                            'No moon orbits included', 'Invented layout / no GR', '/'+b.name.lower()]
+                elif sim.proxima_mode:
                     card = [b.kind, '', f'Radius ~{b.radius:,.0f} km (estimate)', f'Mass ~{b.mass:.4g} kg',
                             'RV minimum mass' if b.parent else 'Rounded stellar estimate',
                             f'Orbit {b.period:g} days' if b.parent else 'Rotation ~83 days',
@@ -581,7 +590,7 @@ def main():
     parser.add_argument("-c","--command",action="append",help="Execute a slash command and exit; may be repeated")
     modes=parser.add_mutually_exclusive_group()
     modes.add_argument('-u','--update',action='store_true',help='Download and install the latest stable GitHub release, then exit')
-    modes.add_argument('-m','--mod',help='Install/update a system mod, e.g. -m"proxima centauri", then exit')
+    modes.add_argument('-m','--mod',help='Install/update a system mod: -m"proxima centauri" or -m"interstellar", then exit')
     modes.add_argument('--tutorial',action='store_true',help='Print the getting-started tutorial and exit')
     root=Path(__file__).resolve().parent
     parser.add_argument('--version',action='version',version='Solar Sim '+(root/'VERSION.txt').read_text().strip())

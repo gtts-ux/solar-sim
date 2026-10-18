@@ -35,6 +35,7 @@ class UpdaterTests(unittest.TestCase):
                        'settings.json':b'{"theme":"amber","screensaver":"saturn"}',
                        'launch_cache.json':b'launch cache','ephemeris_cache.json':b'astronomy cache',
                        'exports/keep.json':b'export data','mods/proxima-centauri.json':b'installed mod data',
+                       'mods/interstellar.json':b'installed film mod data',
                        '.git/config':b'git metadata','notes.txt':b'personal notes'}
         for name,data in self.original.items():
             path=self.root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(data)
