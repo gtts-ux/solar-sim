@@ -222,3 +222,10 @@ These references do not provide this mod's invented planetary masses, radii,
 orbital radii or animation cycles. All are labeled mod-authored model choices.
 The three worlds share a schematic drawing center, not an asserted physical
 host-star layout. No Kerr dynamics, lensing or time dilation are solved.
+
+MOON VIEW SCREENSAVER / artistic, accelerated illustration
+Earth's phases and its roughly fixed location in the near-side lunar sky:
+https://starchild.gsfc.nasa.gov/docs/StarChild/questions/question58.html
+https://blogs.nasa.gov/earthdaycountdown/2020/04/15/t-7-earth-phases/
+The 96-second cycle, spinning texture, angular size, terrain and lighting are
+original artistic model choices, not a location/date-specific ephemeris.

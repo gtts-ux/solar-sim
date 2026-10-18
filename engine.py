@@ -175,7 +175,8 @@ THEMES, CAMERAS AND LIVE LAUNCHES
 /setting lists five persistent themes: Cosmic, Amber, Ocean, Forest and Mono.
 /setting theme amber applies one immediately. --no-color overrides colors.
 /setting screensaver jupiter chooses a planet; all eight planets are included.
-Milky Way and black-hole animations are also available; settings numbers 6-15.
+Milky Way, black-hole and Moon view animations are also available; settings numbers 6-16.
+/setting screensaver moon-view watches Earth's phases above a lunar horizon.
 Settings has immediate arrow focus; Enter applies themes or previews savers.
 Space previews the saved animation; Enter again returns. Choices save locally.
 In orbit view, Left/Right cycles system/close/body/high/wide cameras around the active target.

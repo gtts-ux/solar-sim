@@ -12,7 +12,8 @@ THEMES = {
 }
 SCREENSAVERS = {'milky-way':'Milky Way','earth':'Earth','saturn':'Saturn','black-hole':'Black hole',
                 'mercury':'Mercury','venus':'Venus','mars':'Mars',
-                'jupiter':'Jupiter','uranus':'Uranus','neptune':'Neptune'}
+                'jupiter':'Jupiter','uranus':'Uranus','neptune':'Neptune',
+                'moon-view':'Moon view'}
 
 COSMIC = (17,18,24,25,32,39,75,117,17,53,54,55,61,99,141,189,
           52,94,130,172,214,221,229,230,235,238,242,245,250,253,255,231)
@@ -59,7 +60,8 @@ class Settings:
 
     def set_screensaver(self,name):
         name='-'.join(name.lower().replace('_',' ').replace('-',' ').split())
-        name={'galaxy':'milky-way','milkyway':'milky-way','blackhole':'black-hole','mrs':'mars','urnanus':'uranus'}.get(name,name)
+        name={'galaxy':'milky-way','milkyway':'milky-way','blackhole':'black-hole','mrs':'mars','urnanus':'uranus',
+              'moon':'moon-view','lunar':'moon-view','earth-from-moon':'moon-view'}.get(name,name)
         if name not in SCREENSAVERS:
             raise ValueError('Choose '+', '.join(SCREENSAVERS)+'. Example: /setting screensaver jupiter')
         self._save(self.theme,name)
@@ -71,7 +73,7 @@ class Settings:
         lines += ['', 'SCREENSAVER / '+SCREENSAVERS[self.screensaver], '']
         lines += [('  > ' if key==self.screensaver else '    ')+f'{i}. {label}  /setting screensaver {key}'
                   for i,(key,label) in enumerate(SCREENSAVERS.items(),6)]
-        return '\n'.join(lines)+('\n\nType 1-5 for a theme, 6-15 for a screensaver.\n'
+        return '\n'.join(lines)+(f'\n\nType 1-5 for a theme, 6-{5+len(SCREENSAVERS)} for a screensaver.\n'
              'Full screen: arrows choose; Enter applies themes or previews savers.\n'
              'Space previews the saved animation; Enter again returns.\n'
              'Preferences save for the next start. --no-color overrides colors.\n'

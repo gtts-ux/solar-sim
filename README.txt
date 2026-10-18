@@ -597,10 +597,12 @@ Open /setting to choose a screensaver and save it for the next start:
     /setting screensaver jupiter       Banded clouds, red storm, moons and shadows
     /setting screensaver uranus        Pale cyan clouds and sideways rotation
     /setting screensaver neptune       Blue bands, dark storm, bright clouds
+    /setting screensaver moon-view     Earth's phases above a cratered lunar horizon
 
-Numbers 6-15 in the settings panel select the ten animations; 1-5 still
+Numbers 6-16 in the settings panel select the eleven animations; 1-5 still
 choose themes. Existing numbers 6-9 keep their choices; 10-15 select
-Mercury, Venus, Mars, Jupiter, Uranus and Neptune, respectively. Spaces also work: /setting screensaver black hole.
+Mercury, Venus, Mars, Jupiter, Uranus and Neptune, respectively. Choice 16
+selects Moon view. Spaces also work: /setting screensaver black hole.
 The default is Milky Way. Existing theme preferences are preserved.
 
 In full-screen mode, press Enter on a blank command line (spaces count as
@@ -790,3 +792,24 @@ Use sol-sim --offline -m"interstellar" to skip the network. Installed data lives
 in mods/interstellar.json and survives sol-sim -u. Re-run -m to update it.
 /sources in this mode lists the film and scientific background. See also the
 updated GETTING_STARTED.txt tutorial.
+
+MOON VIEW SCREENSAVER / v1.9.0
+==============================
+
+    /setting screensaver moon-view
+
+Or choose Moon view under /setting > Screensavers (number 16). Enter saves
+and previews it; Enter again returns. Outside the menu, Enter on an empty
+prompt starts your saved animation. Left/Right adjusts animation zoom.
+
+Stand on a stylized lunar surface with craters and a mountain horizon as
+Earth rotates above it. Sunlight sweeps across continents and clouds through
+full, half, crescent and new Earth over a smooth 96-second phase cycle.
+Earth stays in one position above the horizon; the foreground changes light.
+It works in color or monochrome and comes with the base app, without a mod.
+Aliases: /setting screensaver moon, lunar, or earth from moon.
+
+The terrain, Earth's apparent size, rotation and phase timing are artistic
+and accelerated for viewing; this is not a prediction for the simulation date.
+No images, additional packages or network connection are required. Settings
+choices 1-15 keep their previous meanings. Existing preferences are preserved.

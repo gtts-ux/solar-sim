@@ -3,7 +3,7 @@ import math
 import random
 import time
 from themes import galaxy_palette
-from screensaver_scenes import Earth, Saturn, BlackHole, scene_palette, BASIC, Planet, PLANET_STYLES
+from screensaver_scenes import Earth, Saturn, BlackHole, MoonView, scene_palette, BASIC, Planet, PLANET_STYLES
 
 # Four eight-step ramps: blue arms, violet arms, amber bulge and white stars.
 PALETTE = (17,18,24,25,32,39,75,117,
@@ -116,6 +116,7 @@ def animation(name):
     if name=='earth':return Earth()
     if name=='saturn':return Saturn()
     if name=='black-hole':return BlackHole()
+    if name=='moon-view':return MoonView()
     return Galaxy()
 
 

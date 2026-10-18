@@ -58,6 +58,9 @@ GET STARTED WITH SOL-SIM
    screensaver. Enter again returns. F2 closes the settings menu.
    Space in Settings previews the saved screensaver. Outside menus, Enter
    on an empty prompt starts it too. Try Jupiter for moons and shadows.
+   Try /setting screensaver moon-view for Earth's changing phases above a
+   cratered lunar horizon. Moon view is choice 16; Enter previews it and
+   Enter again returns. It is included in the base app, without any mod.
 
 5. REPLAY A MISSION
 

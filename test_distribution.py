@@ -30,13 +30,15 @@ class DistributionTests(unittest.TestCase):
                 self.assertTrue(package.getinfo('solar-sim/Start Solar Sim.command').external_attr>>16 & 0o111)
                 package.extractall(temp/'folder with spaces')
             extracted=temp/'folder with spaces'/'solar-sim'
-            args=['--offline','-c','/day earth','-c','/mission Apollo 11 30 seconds','-c','/mission seek 47','-c','/sources']
+            args=['--offline','-c','/day earth','-c','/mission Apollo 11 30 seconds','-c','/mission seek 47','-c','/sources',
+                  '-c','/setting screensaver moon-view']
             result=subprocess.run([sys.executable,'-B',str(extracted/'solar_sim.py'),*args],cwd=temp,
                                   text=True,capture_output=True,timeout=30)
             self.assertEqual(result.returncode,0,result.stderr)
-            for text in ('DAY LENGTH','24.00 hours','APOLLO 11','Moon landing','NASA'):
+            for text in ('DAY LENGTH','24.00 hours','APOLLO 11','Moon landing','NASA','Moon view'):
                 self.assertIn(text,result.stdout)
             self.assertNotIn('Could not run command',result.stdout)
+            self.assertEqual(json.loads((extracted/'settings.json').read_text())['screensaver'],'moon-view')
             if shutil.which('sh') and sys.platform!='win32':
                 for name in ('Start Solar Sim.sh','Start Solar Sim.command'):
                     result=subprocess.run(['sh',str(extracted/name),'--offline','-c','/planet'],cwd=temp,

@@ -21,6 +21,8 @@ PALETTES = {
                (235,237,239,243,246,250,223,230), GRAY),
     'black-hole': ((52,88,94,130,166,172,208,214), (52,94,130,172,214,220,229,230),
                    (17,18,54,55,61,99,141,183), (52,94,178,214,221,229,230,231)),
+    'moon-view': ((17,18,24,25,31,32,39,75), (22,28,29,35,71,77,114,157),
+                  (237,240,244,248,251,253,255,231), GRAY),
 }
 PALETTES.update({
     'mercury': ((234,237,240,243,246,249,252,255),(233,236,239,242,245,247,250,253),
@@ -39,14 +41,15 @@ PALETTES.update({
 
 BASIC = {'earth':(4,2,7,6),'saturn':(3,3,7,7),'black-hole':(1,3,5,7),
          'mercury':(7,7,7,7),'venus':(3,3,7,3),'mars':(1,3,7,3),
-         'jupiter':(3,3,1,7),'uranus':(6,4,7,6),'neptune':(4,4,6,7)}
+         'jupiter':(3,3,1,7),'uranus':(6,4,7,6),'neptune':(4,4,6,7),
+         'moon-view':(4,2,7,7)}
 
 
 def scene_palette(name,theme):
     ramps=PALETTES[name]
     if theme=='mono':return GRAY*4
     # Preserve each object's recognizable colors; the sky follows the UI theme.
-    if theme!='cosmic' and name!='black-hole':
+    if theme!='cosmic' and name not in ('black-hole','moon-view'):
         from themes import galaxy_palette
         sky=galaxy_palette(theme)
         ramps=(*ramps[:3],tuple(sky[8:12])+tuple(sky[-4:]))
@@ -240,6 +243,114 @@ class Earth(Scene):
             else:
                 brightness=land_light if family else water_light
             draw(index,bit,family,brightness)
+        return self.finish(raster,seconds)
+
+
+class MoonView(Scene):
+    """A fixed lunar viewpoint: rotating Earth, changing sunlight, cratered foreground.
+
+    A whole artistic phase cycle takes 96 seconds. Angular sizes, rotation speed,
+    terrain and illumination are composed for the terminal, not a dated ephemeris.
+    """
+    PHASE_SECONDS=96.
+    CRATERS=((.16,.91,.135,.045),(.59,.85,.105,.034),(.84,.975,.17,.054),
+             (.76,.765,.042,.013),(.34,.79,.05,.016),(.39,.97,.064,.025))
+
+    def __init__(self):
+        super().__init__()
+        self.earth=Earth()
+
+    @classmethod
+    def phase_angle(cls,seconds):
+        return seconds/cls.PHASE_SECONDS*math.tau
+
+    def build_geometry(self,width,height,zoom):
+        pixel_width,pixel_height=width*2,height*4
+        radius=max(1,min(width*.25,height*.73)*zoom)
+        self.radius=radius
+        self.earth_center=(width*1.10,height*4*.33)
+        cx,cy=self.earth_center
+        self.horizon=[pixel_height*(.705+.018*math.sin(px/pixel_width*11+.5)
+                      +.012*math.sin(px/pixel_width*29+1.8)
+                      +.004*math.sin(px/pixel_width*67)) for px in range(pixel_width)]
+        earth=[]
+        tilt=math.radians(23.4);ca,sa=math.cos(tilt),math.sin(tilt)
+        for py in range(max(0,int(cy-radius*1.07)),min(pixel_height,math.ceil(cy+radius*1.07))):
+            y=(cy-py-.5)/radius
+            for px in range(max(0,int(cx-radius*1.07)),min(pixel_width,math.ceil(cx+radius*1.07))):
+                x=(px+.5-cx)/radius
+                rr=x*x+y*y
+                if rr>1.14 or py>=self.horizon[px]:continue
+                index=(py//4)*width+px//2;bit=DOTS[py%4][px%2]
+                if rr>1:
+                    glow=math.exp(-(math.sqrt(rr)-1)*42)
+                    earth.append((index,bit,x,y,0.,None,0,glow));continue
+                z=math.sqrt(1-rr)
+                lat=math.asin(max(-1,min(1,-x*sa+y*ca)))
+                lon=math.atan2(x*ca+y*sa,z)
+                row=min(self.earth.TH-1,int((.5-lat/math.pi)*self.earth.TH))
+                earth.append((index,bit,x,y,z,(lon/math.tau+.5)*self.earth.TW,
+                              row*self.earth.TW,0.))
+        terrain=[]
+        for py in range(pixel_height):
+            v=(py+.5)/pixel_height
+            for px in range(pixel_width):
+                if py+.5<self.horizon[px]:continue
+                u=(px+.5)/pixel_width
+                depth=(py+.5-self.horizon[px])/max(1,pixel_height-self.horizon[px])
+                grain=(math.sin(px*1.73+py*.87)+math.sin(px*.61-py*1.39))*.035
+                relief=.055*math.sin(u*53+v*19)+.025*math.sin(u*137-v*43)
+                albedo=.55+depth*.13+grain+relief
+                slope=0.
+                for qx,qy,rx,ry in self.CRATERS:
+                    x,y=(u-qx)/rx,(v-qy)/ry
+                    r=math.hypot(x,y)
+                    if r<1.23:
+                        rim=math.exp(-((r-1)/.11)**2)
+                        bowl=max(0.,1-r*r)
+                        albedo+=.40*rim-.32*bowl
+                        slope+=(x/max(.2,r))*(rim*.82+bowl*.53)
+                # A low ridge at the horizon is darker than the nearby regolith.
+                if depth<.11:albedo*=.68+.32*depth/.11
+                terrain.append(((py//4)*width+px//2,DOTS[py%4][px%2],
+                                max(.17,min(.95,albedo)),max(-1.,min(1.,slope))))
+        return earth,terrain
+
+    def sky_visible(self,x,y,width,height):
+        px=min(width*2-1,x*2+1);py=y*4+2
+        cx,cy=self.earth_center
+        return py<self.horizon[px] and (px-cx)**2+(py-cy)**2>self.radius**2*1.15
+
+    def frame(self,width,height,seconds,zoom=1):
+        if width<=0 or height<=0:return []
+        earth,terrain=self.geometry(width,height,zoom)
+        raster=Raster(width,height,getattr(self,'monochrome',False))
+        angle=self.phase_angle(seconds);sx,sz=math.sin(angle),math.cos(angle)
+        rotation=(seconds*.078+.08)*self.earth.TW/math.tau
+        tw=self.earth.TW;texture=self.earth.land;clouds=self.earth.cloud
+        draw=raster.dot
+        for index,bit,x,y,z,col,offset,glow in earth:
+            if col is None:
+                # Only the illuminated limb scatters appreciable blue light.
+                draw(index,bit,0,glow*(.035+.28*max(0.,x*sx)))
+                continue
+            sunlight=max(0.,x*sx+z*sz)
+            light=.018+.98*sunlight**.78
+            family=texture[offset+int(col+rotation)%tw]
+            cloud=clouds[offset+int(col+rotation*1.055)%tw]
+            if family==2:brightness=light*.94
+            elif cloud>102:
+                family=2;brightness=light*(.76+cloud/1100)
+            else:brightness=light*(.83 if family==0 else .91)
+            draw(index,bit,family,brightness)
+        # The foreground brightens as Earth wanes; soft earthlight keeps the
+        # lunar night readable. It is an artistic cycle, not a lighting solver.
+        day=(1-sz)*.5
+        ambient=.22+.10*(1-day)
+        for index,bit,albedo,slope in terrain:
+            shade=max(.08,min(1.,.66+slope*sx*.46))
+            brightness=albedo*(ambient+day*.85*shade)
+            draw(index,bit,3,brightness)
         return self.finish(raster,seconds)
 
 

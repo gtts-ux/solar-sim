@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from screensaver import Galaxy, PALETTE, show_screensaver, animation
-from screensaver_scenes import Earth, Saturn, BlackHole, BASIC, DOTS, Raster, scene_palette, Planet, PLANET_STYLES, JupiterMoons
+from screensaver_scenes import Earth, Saturn, BlackHole, MoonView, BASIC, DOTS, Raster, scene_palette, Planet, PLANET_STYLES, JupiterMoons
 from themes import Settings, SCREENSAVERS, THEMES
 from engine import Simulation
 from solar_sim import completions
@@ -272,7 +272,7 @@ class PlanetSceneTests(unittest.TestCase):
 
     def test_all_planets_are_registered_without_renumbering_existing_choices(self):
         self.assertEqual(list(SCREENSAVERS)[:4],['milky-way','earth','saturn','black-hole'])
-        self.assertEqual(len(SCREENSAVERS),10)
+        self.assertEqual(len(SCREENSAVERS),11)
         for name in self.scenes:
             self.assertIn(name,SCREENSAVERS)
             self.assertEqual(animation(name).name,name)
@@ -340,7 +340,7 @@ class PlanetSceneTests(unittest.TestCase):
                 self.assertEqual(Settings(root/'settings.json').screensaver,name)
                 self.assertIs(sim.mission,replay)
                 self.assertIn('/setting screensaver '+name,completions('/setting screensaver '+name[:3],sim))
-            self.assertIn('1 to 15',sim.command('/setting 16'))
+            self.assertIn('1 to 16',sim.command('/setting 17'))
             self.assertEqual(sim.settings.screensaver,'neptune')
             for alias,name in (('mrs','mars'),('urnanus','uranus')):
                 sim.command('/setting screensaver '+alias)
@@ -466,6 +466,111 @@ class SaverPreferenceTests(unittest.TestCase):
         value=Settings(self.path/'missing')
         with self.assertRaises(OSError):value.set_screensaver('saturn')
         self.assertEqual(value.screensaver,'milky-way')
+
+
+class MoonViewTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.scene=MoonView()
+
+    @staticmethod
+    def mask(frame,index,width):
+        glyph=frame[index//width][index%width][0]
+        return ord(glyph)-0x2800 if '\u2800'<=glyph<='\u28ff' else 0
+
+    def test_full_half_crescent_new_and_opposite_lit_hemisphere(self):
+        scene=self.scene;scene.monochrome=False
+        frames={t:scene.frame(120,40,t) for t in (0,24,36,48,72)}
+        earth,_=scene.geometry(120,40,1)
+        def lit(t,side=lambda x:True):
+            return sum(bool(self.mask(frames[t],index,120)&bit)
+                       for index,bit,x,y,z,col,offset,glow in earth if col is not None and side(x))
+        full=lit(0)
+        self.assertGreater(full,1000)
+        self.assertTrue(.4<lit(24)/full<.6)
+        self.assertTrue(.07<lit(36)/full<.23)
+        self.assertLess(lit(48),full*.01)
+        self.assertEqual(lit(24,lambda x:x<-.1),0)
+        self.assertEqual(lit(72,lambda x:x>.1),0)
+        self.assertGreater(lit(24,lambda x:x>.1),full*.3)
+        self.assertGreater(lit(72,lambda x:x<-.1),full*.3)
+
+    def test_fixed_horizon_and_earth_do_not_leak_background_stars(self):
+        scene=MoonView();scene.frame(100,34,0)
+        center=scene.earth_center;horizon=list(scene.horizon)
+        scene.stars=[(.55,.33,0,1),(.1,.96,0,1),(.05,.05,0,1)]
+        for t in (0,24,48,72):
+            frame=scene.frame(100,34,t)
+            self.assertEqual(center,scene.earth_center)
+            self.assertEqual(horizon,scene.horizon)
+            for y,row in enumerate(frame):
+                for x,(glyph,_,_) in enumerate(row):
+                    if glyph in ('+','*','·'):
+                        self.assertTrue(scene.sky_visible(x,y,100,34))
+            self.assertNotIn(frame[11][55][0],('+','*','·'))
+            self.assertNotIn(frame[32][10][0],('+','*','·'))
+        self.assertEqual(frame[1][5][0],'+')
+
+    def test_terrain_is_cratered_and_brightens_as_earth_wanes(self):
+        scene=self.scene;scene.monochrome=False
+        full=scene.frame(120,40,0);new=scene.frame(120,40,48)
+        def ground(frame):
+            return [color%8 for row in frame[32:] for glyph,color,_ in row if glyph!=' ' and color//8==3]
+        self.assertGreater(len(set(ground(new))),2)
+        self.assertGreater(sum(ground(new))/len(ground(new)),sum(ground(full))/len(ground(full)))
+        self.assertTrue(any(0x2800<ord(c)<=0x28ff for row in full[30:] for c,_,_ in row))
+
+    def test_resize_zoom_and_monochrome_runs_remain_deterministic(self):
+        scene=self.scene
+        for mono in (False,True):
+            scene.monochrome=mono
+            for w,h in ((1,1),(20,8),(64,22),(120,40),(200,60)):
+                for zoom in (.7,1,1.35):
+                    frame=scene.frame(w,h,24,zoom)
+                    self.assertEqual(len(frame),h)
+                    self.assertTrue(all(len(row)==w for row in frame))
+                    self.assertTrue(all(0<=color<32 for row in frame for _,color,_ in row))
+            expected=scene.frame(64,22,24)
+            rebuilt=[[(' ',24,False) for _ in range(64)] for _ in range(22)]
+            for y,x,text,color,bold in scene.runs(64,22,24):
+                for offset,char in enumerate(text):rebuilt[y][x+offset]=(char,color,bold)
+            self.assertEqual(expected,rebuilt)
+            self.assertEqual(expected,scene.frame(64,22,24))
+            text=''.join(c for row in expected for c,_,_ in row)
+            self.assertTrue(all(c in ' ·+*' or 0x2800<ord(c)<=0x28ff for c in text))
+        scene.monochrome=False
+        self.assertEqual(scene.frame(0,22,1),[])
+        self.assertEqual(scene.frame(64,0,1),[])
+
+    def test_motion_is_smooth_repeatable_and_geometry_is_cached(self):
+        scene=self.scene;scene.monochrome=False
+        first=scene.frame(120,40,8);geometry=scene.samples
+        neighbor=scene.frame(120,40,8+1/30)
+        self.assertIs(geometry,scene.samples)
+        later=scene.frame(120,40,17)
+        changes=lambda frame:sum(a!=b for row,other in zip(first,frame) for a,b in zip(row,other))
+        self.assertGreater(changes(neighbor),0)
+        self.assertLess(changes(neighbor),changes(later))
+        scene.frame(64,22,6)
+        self.assertEqual(first,scene.frame(120,40,8))
+
+    def test_settings_append_choice_and_accept_aliases_without_a_mod(self):
+        self.assertEqual(list(SCREENSAVERS)[-1],'moon-view')
+        self.assertIsInstance(animation('moon-view'),MoonView)
+        self.assertIn('moon-view',BASIC)
+        for theme in THEMES:
+            self.assertEqual(len(scene_palette('moon-view',theme)),32)
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            sim=Simulation(settings_path=root/'settings.json',launch_cache_path=root/'launch.json',mods_path=root/'mods')
+            for command in ('/setting 16','/setting screensaver moon view','/setting screensaver moon',
+                            '/setting screensaver lunar','/setting screensaver earth from moon'):
+                self.assertNotIn('Could not run',sim.command(command))
+                self.assertEqual(sim.settings.screensaver,'moon-view')
+                self.assertEqual(Settings(root/'settings.json').screensaver,'moon-view')
+            self.assertIn('/setting screensaver moon-view',completions('/setting screensaver moo',sim))
+            self.assertIn('6-16',sim.settings.text())
+            self.assertFalse((root/'mods').exists())
 
 
 if __name__=='__main__':
