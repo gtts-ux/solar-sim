@@ -53,8 +53,9 @@ class GitHubRedirects(HTTPRedirectHandler):
 
 def fetch_bytes(url,limit):
     trusted_url(url)
-    request=Request(url,headers={'User-Agent':'SolarSim-Updater','Accept':'application/vnd.github+json' if url==LATEST else 'application/octet-stream'})
-    if url==LATEST:request.add_header('X-GitHub-Api-Version','2022-11-28')
+    api=urlsplit(url).hostname=='api.github.com'
+    request=Request(url,headers={'User-Agent':'SolarSim-Updater','Accept':'application/vnd.github+json' if api else 'application/octet-stream'})
+    if api:request.add_header('X-GitHub-Api-Version','2022-11-28')
     with build_opener(GitHubRedirects()).open(request,timeout=20) as response:
         trusted_url(response.geturl())
         if int(response.headers.get('Content-Length') or 0)>limit:

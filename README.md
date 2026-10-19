@@ -86,6 +86,25 @@ The package lives in [interstellar-mod](https://github.com/gtts-ux/interstellar-
 
 This is a **fictional schematic**, with film-inspired descriptions and explicitly invented planetary masses, radii, distances and animation cycles. The three worlds share a Gargantua-centered drawing frame; this does not establish their physical host-star arrangements. UTC controls animation; the map does not solve Kerr orbits, lensing or time dilation. The flat-space distance/c illustration is not a relativistic travel time. Unknown days, moons and atmospheric measurements are left unspecified. Screensaver selections are independent of this mod. `/sources` links the film and scientific background.
 
+## Create and share mods
+
+Anyone can publish a system catalogue without changing Solar Sim's code or joining a registry. Version **1.10.0+** installs community JSON from a local file, a public **GitHub owner/repository**, or a direct GitHub JSON link. Mods can add their own central star or black hole, planets, dwarfs and moons in a separate catalogue.
+
+Read the complete [mod-making tutorial](MODDING.txt), use `sol-sim --mod-tutorial` in Terminal, or `/mod tutorial` in the app. From a new project folder:
+
+```sh
+sol-sim --mod-template solar-mod.json
+# Edit the generated JSON in a plain-text editor.
+sol-sim --check-mod solar-mod.json
+sol-sim --offline -m "./solar-mod.json"
+```
+
+Then start the app and use `/mods`, `/mod aurora-system`, `/body Azure`, `/moons Azure`, `/orbit` and `/mod exit`. Change the template's `id` and other fields for your own system. The [editable example](solar-mod.json) includes two planets and a moon, with parent-relative eccentric and inclined orbits. Installed catalogues appear in the arrow menu under **Mods**.
+
+To share, upload **solar-mod.json** to the **root of your own public GitHub repository** and give people `sol-sim -m "YOUR-NAME/YOUR-REPOSITORY"`. The installer uses that repository's default branch, copies only validated JSON and never executes repository code. No app pull request or manual registration is required. To try a working public example, `sol-sim -m "gtts-ux/solar-sim"` installs this repository's Aurora sample data catalogue.
+
+For updates, increase the package version and repeat the original install command. Older packages do not downgrade a newer installed mod. App updates preserve `mods/`. The guide documents all fields, units, validation errors and removal. This format supports up to 64 bodies in a 64 KiB file; it adds data systems rather than custom Python plugins, images, screensavers or multi-star dynamics. Orbital positions use the author's local Keplerian elements, not automatic live ephemerides.
+
 ## Try it
 
 ```text

@@ -22,6 +22,7 @@ One star. Eight planets. /dwarf opens five more worlds in a separate mode.
 
 Type /planet to begin, /earth for a detailed profile, or /help for all commands.
 New here? /tutorial walks through starting, exploring and updating with sol-sim.
+Make or share your own system: /mod tutorial. /mods lists installed catalogues.
 Explore the giants with /moons jupiter and /view saturn.
 
 The clock follows the actual current UTC time. /orbit opens full-screen orbits.
@@ -42,6 +43,14 @@ def completions(line, sim=None):
     """Complete commands and bodies, retaining a slash on direct body commands."""
     if not line.startswith("/"):
         return []
+    if line.startswith('/mod '):
+        choices=['exit','tutorial']
+        if sim:choices += [p['id'] for p in sim.installed_mods()[0]]
+        return ['/mod '+name for name in sorted(set(choices)) if name.startswith(line[5:].lower())]
+    if line.startswith('/body ') and sim:
+        import shlex
+        fragment=line[6:].strip('"\'').lower()
+        return ['/body '+shlex.quote(b.name) for b in sim.visible_bodies if b.name.lower().startswith(fragment)]
     if line.startswith('/proxima '):
         return [value for value in ('/proxima centauri','/proxima centari','/proxima exit','/proxima b','/proxima d','/proxima c') if value.startswith(line.lower())]
     if line.startswith('/interstellar '):
@@ -213,7 +222,7 @@ def tui(screen, sim, no_color=False):
             x = 2+column*(w//2)
             marker = sim.orbit_number(body,index+1)
             distance_text = f"{distance/AU_KM:.3f} AU" if body.parent in ("Sun", "Proxima Centauri", "Gargantua") else f"{distance:,.0f} km"
-            source_text = "fiction" if sim.interstellar_mode else "model" if sim.mod_mode else "JPL" if source.startswith("JPL") else "approx"
+            source_text = "user" if sim.community_mode else "fiction" if sim.interstellar_mode else "model" if sim.mod_mode else "JPL" if source.startswith("JPL") else "approx"
             display_name = body.name.replace('Proxima Centauri ', 'Proxima ') if sim.proxima_mode else body.name
             write(y,x,f"[{marker}] {display_name:<10} {distance_text:>13} {source_text}",palette[(marker-1)%len(palette)],True)
         hint = sim.mod_hint if sim.mod_mode else "/dwarf exit normal planets · /satellites ceres · /moons pluto" if sim.dwarf_mode else "/iss focus ISS · /satellites mars spacecraft · /moons jupiter moons · Esc overview"
@@ -319,7 +328,7 @@ def tui(screen, sim, no_color=False):
             write(0,max(50,w-19),f"● {state}   /help",3 if sim.paused else 2,True)
             write(1,2,f"{sim.date:%Y-%m-%d %H:%M:%S} UTC",7)
             rate = "REAL TIME / 1x" if sim.clock_mode == "realtime" else f"{sim.speed:g} days/sec"
-            mod_label = 'Interstellar / fictional model' if sim.interstellar_mode else 'Proxima / illustrative phases'
+            mod_label = sim.mod_data['name']+' / community' if sim.community_mode else 'Interstellar / fictional model' if sim.interstellar_mode else 'Proxima / illustrative phases'
             write(1,30,f"Historical replay / {sim.mission.flight.name}" if sim.mission else f"{rate}  ·  "+(mod_label if sim.mod_mode else sim.ephemeris.message),8)
             rule(2)
 
@@ -338,15 +347,12 @@ def tui(screen, sim, no_color=False):
                     write(y,split,"│",8)
                 b = sim.selected
                 write(3,split+2,"SELECTED / " + b.name.upper(),b.color,True)
-                if isinstance(b,Spacecraft):
-                    card = [b.kind,"",f"Parent     {b.parent}",f"Agency     {b.agency}",
-                            f"Mass       ~{b.mass:,.0f} kg",f"Span       ~{b.radius*2000:g} m",
-                            "", "Nominal illustrative orbit", "Not live spacecraft tracking"]
-                else:
-                    card = [b.kind, "", f"Diameter   {2*b.radius:,.1f} km", f"Mass       {b.mass:.4g} kg",
-                            f"Gravity    {b.gravity:.3g} m/s²", f"Parent     {b.parent or '—'}",
-                            'Solar day  '+day_label(b)]
-                if sim.interstellar_mode:
+                if sim.community_mode:
+                    card = [b.kind,'','COMMUNITY DATA', 'Fictional system' if sim.mod_data['fictional'] else 'Author-supplied catalogue',
+                            f'Radius {b.radius:,.1f} km', f'Mass {b.mass:.4g} kg',
+                            f'Orbit {b.period:g} days' if b.parent else 'Local system center',
+                            f'{b.known_moons} moons included', 'See /body and /sources']
+                elif sim.interstellar_mode:
                     card = [b.kind, '', 'FICTIONAL MODEL',
                             f'Drawing radius ~{b.radius:,.0f} km',
                             f'Cycle {b.period:g} model days' if b.parent else 'Kerr black hole in the film',
@@ -359,14 +365,23 @@ def tui(screen, sim, no_color=False):
                             'Day length unknown' if b.parent else 'Solar day not applicable',
                             'No confirmed moons' if b.parent else 'Two confirmed planets',
                             'Illustrative orbital phase']
-                elif b.kind not in ("Natural satellite","Artificial satellite") and b is not lookup("sun"):
-                    card += [f"Moons      {b.known_moons} known", f"Profiles   {len(satellites(b.name))} included"]
-                elif b.period:
-                    card += [f"Orbit      {b.period:.4g} days"]
+                elif isinstance(b,Spacecraft):
+                    card = [b.kind,"",f"Parent     {b.parent}",f"Agency     {b.agency}",
+                            f"Mass       ~{b.mass:,.0f} kg",f"Span       ~{b.radius*2000:g} m",
+                            "", "Nominal illustrative orbit", "Not live spacecraft tracking"]
+                else:
+                    card = [b.kind, "", f"Diameter   {2*b.radius:,.1f} km", f"Mass       {b.mass:.4g} kg",
+                            f"Gravity    {b.gravity:.3g} m/s²", f"Parent     {b.parent or '—'}",
+                            'Solar day  '+day_label(b)]
+                if not sim.mod_mode:
+                    if b.kind not in ("Natural satellite","Artificial satellite") and b is not lookup("sun"):
+                        card += [f"Moons      {b.known_moons} known", f"Profiles   {len(satellites(b.name))} included"]
+                    elif b.period:
+                        card += [f"Orbit      {b.period:.4g} days"]
                 card += ["", f"/{b.name.lower()}", f"/view {b.name.lower()}"]
                 for i,line in enumerate(card[:map_end-5]):
                     write(5+i,split+2,line,8 if line.startswith("/") else 7)
-            write(map_end-1,2,"/orbit full-screen orbits · /compare earth mars · /sync status",8)
+            write(map_end-1,2,"/orbit full-screen · /body NAME · /sources · /mod exit" if sim.community_mode else "/orbit full-screen orbits · /compare earth mars · /sync status",8)
             rule(map_end,"RESPONSE")
             response_height = h-map_end-6
             wrapped = wrap_lines(response,w-6)
@@ -590,13 +605,25 @@ def main():
     parser.add_argument("-c","--command",action="append",help="Execute a slash command and exit; may be repeated")
     modes=parser.add_mutually_exclusive_group()
     modes.add_argument('-u','--update',action='store_true',help='Download and install the latest stable GitHub release, then exit')
-    modes.add_argument('-m','--mod',help='Install/update a system mod: -m"proxima centauri" or -m"interstellar", then exit')
+    modes.add_argument('-m','--mod',help='Install/update a named mod, local JSON, GitHub owner/repo or JSON link, then exit')
+    modes.add_argument('--mod-template',metavar='PATH',help='Write a new editable community mod JSON file; never overwrites')
+    modes.add_argument('--check-mod',metavar='PATH',help='Validate a mod JSON file without installing it')
+    modes.add_argument('--mod-tutorial',action='store_true',help='Print the mod creation and public sharing tutorial')
     modes.add_argument('--tutorial',action='store_true',help='Print the getting-started tutorial and exit')
     root=Path(__file__).resolve().parent
     parser.add_argument('--version',action='version',version='Solar Sim '+(root/'VERSION.txt').read_text().strip())
     args = parser.parse_args()
-    if args.update or args.tutorial or args.mod is not None:
-        if args.command:parser.error('Use --update, --tutorial or --mod without -c commands.')
+    if args.update or args.tutorial or args.mod is not None or args.mod_template is not None or args.check_mod is not None or args.mod_tutorial:
+        if args.command:parser.error('Use terminal maintenance/tutorial options without -c commands.')
+        if args.mod_template is not None:
+            from mod_manager import template_cli
+            return template_cli(root,args.mod_template)
+        if args.check_mod is not None:
+            from mod_manager import check_cli
+            return check_cli(args.check_mod)
+        if args.mod_tutorial:
+            print((root/'MODDING.txt').read_text(encoding='utf-8'))
+            return 0
         if args.mod is not None:
             from mod_manager import install_cli
             return install_cli(root,args.mod,offline=args.offline)

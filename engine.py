@@ -365,7 +365,7 @@ COMMANDS = ["mission", "missions", "day", "satellites", "satellite", "dwarf", "m
             "now", "reset", "scale", "labels", "trails", "export", "info", "sources", "help", "clear", "quit", "exit"]
 
 
-COMMANDS = ['interstellar','proxima','tutorial','menu','setting','settings','camera','live'] + COMMANDS
+COMMANDS = ['mod','mods','body','interstellar','proxima','tutorial','menu','setting','settings','camera','live'] + COMMANDS
 
 
 class SolarSimulation:
@@ -1002,7 +1002,7 @@ class SolarSimulation:
 
         palette = (7,3,4,1,5,2,6,4,7)
         def identity(body,index):
-            key = self.orbit_number(body,index+1)-1 if center.parent is None else index
+            key = self.orbit_number(body,index+1)-1 if center.parent is None or self.mod_mode else index
             return str(key+1),palette[key % len(palette)]
 
         if self.trails:
@@ -1046,7 +1046,8 @@ class SolarSimulation:
             if self.system_filter == "spacecraft":
                 message = "No confirmed current spacecraft orbiters in this catalogue."
             else:
-                message = ('No moons specified in the film; none included.' if self.interstellar_mode else
+                message = ('No moon orbits included for this body in the community catalogue.' if self.community_mode else
+                           'No moons specified in the film; none included.' if self.interstellar_mode else
                            'No confirmed moons; existence is unknown.' if self.proxima_mode else
                            f"{center.name} has no moons." if not center.known_moons else f"{center.known_moons} known moons; no orbits included.")
             put(max(0,cx-len(message)/2),min(height-1,cy+2),message,3,True)
@@ -1100,7 +1101,7 @@ class SolarSimulation:
         children=self.children(body)
         reach=max((b.orbit*(1+b.eccentricity) for b in children),default=0.)
         # A moon or catalogue spacecraft gets enough context to see its primary.
-        if body.kind in ('Natural satellite','Artificial satellite'):
+        if body.kind in ('Natural satellite','Artificial satellite','Moon'):
             reach=max(reach,body.orbit*(1+body.eccentricity))
         return self.camera.framing(radius,reach)
 
@@ -1140,8 +1141,8 @@ class SolarSimulation:
         reference=self.position(target)
         children=self.children(target)
         parent=self.lookup(target.parent) if target.parent else None
-        neighbors=([parent,*satellites(parent.name),*orbiters(parent.name,self.date)]
-                   if parent and target.kind in ('Natural satellite','Artificial satellite') else [parent] if parent else [])
+        neighbors=([parent,*self.children(parent)]
+                   if parent and target.kind in ('Natural satellite','Artificial satellite','Moon') else [parent] if parent else [])
         # Target last, with its physical radius, regardless of the current map's system.
         unique={b.name:b for b in [*neighbors,*children,target] if b is not None}
         points=[];paths=[]
@@ -1172,7 +1173,8 @@ class SolarSimulation:
 
 
 from proxima import ProximaSupport
+from community_runtime import CommunitySupport
 
 
-class Simulation(ProximaSupport, SolarSimulation):
+class Simulation(CommunitySupport, ProximaSupport, SolarSimulation):
     """Solar System simulation with optional installed system catalogues."""

@@ -813,3 +813,42 @@ The terrain, Earth's apparent size, rotation and phase timing are artistic
 and accelerated for viewing; this is not a prediction for the simulation date.
 No images, additional packages or network connection are required. Settings
 choices 1-15 keep their previous meanings. Existing preferences are preserved.
+
+CREATE AND SHARE COMMUNITY MODS / v1.10.0
+========================================
+
+Anyone can publish a separate system catalogue without changing Solar Sim's
+code or being added to a central registry. From a new project folder:
+
+    sol-sim --mod-template solar-mod.json
+
+Edit that file in a plain-text editor, then validate and install it:
+
+    sol-sim --check-mod solar-mod.json
+    sol-sim --offline -m "./solar-mod.json"
+
+Inside the app, /mods lists installed packages. The unchanged example opens
+with /mod aurora-system. Try /body Azure, /moons Azure and /body Lumen in
+orbit mode. /mod exit restores normal planets. Installed community systems
+also appear under Mods in the arrow menu.
+
+To share a mod, put solar-mod.json at the root of your own public GitHub
+repository. Anyone can install it with:
+
+    sol-sim -m "YOUR-NAME/YOUR-REPOSITORY"
+
+The default branch is used. Direct GitHub JSON links and local JSON files
+work too. Repeating the original install command updates a package; older
+versions do not downgrade newer installed data. App updates preserve mods/.
+For a live public example: sol-sim -m "gtts-ux/solar-sim" installs Aurora data.
+
+The complete beginner tutorial is MODDING.txt. Read it with:
+
+    sol-sim --mod-tutorial
+
+Or use /mod tutorial in the app. It explains every field, unit, orbit angle,
+parent relationship, validation message, version update and removal step.
+Format 2 supports one central star/black hole, planets, dwarfs and moons;
+64 bodies and 64 KiB maximum. Mods are validated data; no repository code is
+executed. Custom Python, mission/screen-saver code and multiple central stars
+are outside this format. Keep original mod projects outside the app folder.

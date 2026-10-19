@@ -10,11 +10,11 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 # Explicit manifests prevent cache, credentials, exports or unrelated files leaking into releases.
 FILES = (
-    'START_HERE.txt', 'GETTING_STARTED.txt', 'README.md', 'README.txt', 'GITHUB_SETUP.md', 'SOURCES.txt', 'VERSION.txt',
+    'START_HERE.txt', 'GETTING_STARTED.txt', 'MODDING.txt', 'solar-mod.json', 'README.md', 'README.txt', 'GITHUB_SETUP.md', 'SOURCES.txt', 'VERSION.txt',
     'Start Solar Sim.command', 'Start Solar Sim.sh', 'Start Solar Sim.bat', 'install_commands.py',
-    'solar_sim.py', 'updater.py', 'engine.py', 'proxima.py', 'interstellar.py', 'mod_manager.py', 'mod_catalogue/proxima-centauri.json', 'mod_catalogue/interstellar.json', 'navigation.py', 'catalog.py', 'ephemeris.py', 'missions.py',
+    'solar_sim.py', 'updater.py', 'engine.py', 'proxima.py', 'interstellar.py', 'mod_manager.py', 'community_mods.py', 'community_runtime.py', 'mod_catalogue/proxima-centauri.json', 'mod_catalogue/interstellar.json', 'navigation.py', 'catalog.py', 'ephemeris.py', 'missions.py',
     'day_lengths.py', 'flight_replay.py', 'screensaver.py', 'screensaver_scenes.py', 'themes.py', 'camera.py', 'live_launches.py',
-    'test_solar_sim.py', 'test_screensaver.py', 'test_distribution.py', 'test_controls.py', 'test_commands.py', 'test_navigation.py', 'test_updater.py', 'test_mods.py', 'test_interstellar.py',
+    'test_solar_sim.py', 'test_screensaver.py', 'test_distribution.py', 'test_controls.py', 'test_commands.py', 'test_navigation.py', 'test_updater.py', 'test_mods.py', 'test_interstellar.py', 'test_community_mods.py',
     '.gitignore', '.gitattributes', 'tools/build_release.py', 'tools/smoke_update.py',
     '.github/workflows/checks.yml', '.github/workflows/release.yml',
 )

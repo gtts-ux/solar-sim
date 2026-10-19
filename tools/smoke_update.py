@@ -42,10 +42,27 @@ def main():
         assert 'Could not run command' not in result.stdout,result.stdout
         assert 'FICTIONAL MODEL' in result.stdout
         film=(root/'mods/interstellar.json').read_bytes()
+        def app_command(*args):
+            result=subprocess.run([sys.executable,str(root/'solar_sim.py'),*args],capture_output=True,text=True,timeout=45)
+            assert result.returncode==0,result.stdout+result.stderr
+            assert 'Could not run command' not in result.stdout,result.stdout
+            return result.stdout
+        project=Path(temp)/'new mod project';project.mkdir()
+        template=project/'solar-mod.json'
+        assert 'Created mod template' in app_command('--mod-template',str(template))
+        assert 'Valid mod:' in app_command('--check-mod',str(template))
+        assert 'Installed Aurora System' in app_command('--offline','-m'+str(template))
+        text=app_command('--offline','-c','/mod aurora-system','-c','/orbit','-c','/moons Azure',
+                         '-c','/body Lumen','-c','/compare Azure Ember','-c','/mod exit')
+        assert 'Lumen' in text and 'COMMUNITY SYSTEM' in text
+        assert 'public GitHub package' in app_command('-m','gtts-ux/solar-sim')
+        community=(root/'mods/aurora-system.json').read_bytes()
+        assert json.loads(community)['format']==2
         assert run_update(root,fetch=published) is None
         assert (root/'mods/proxima-centauri.json').read_bytes()==installed
         assert (root/'mods/interstellar.json').read_bytes()==film
-    print('Published ZIP/checksum downloaded successfully; upgrade, saved settings, Proxima and Interstellar installation/orbits/comparison and repeat check passed.')
+        assert (root/'mods/aurora-system.json').read_bytes()==community
+    print('Published ZIP/checksum downloaded successfully; upgrade, saved settings, curated mods, community creation/validation/local and public GitHub installation, moon orbits/comparison and repeat check passed.')
 
 
 if __name__=='__main__':main()

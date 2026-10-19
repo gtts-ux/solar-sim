@@ -1,0 +1,232 @@
+MAKE AND SHARE SOLAR SIM MODS
+============================
+For Solar Sim v1.10.0 or newer. No Python coding, Git, account or pip package is
+needed to make and test a mod. A public GitHub repository is one easy way
+to share it. Mods are JSON data catalogues; the app never runs mod code.
+
+Examples use the macOS/Linux sol-sim command. On Windows, replace sol-sim
+with py -3 "C:\path\to\solar-sim\solar_sim.py" (use your actual app path).
+The Python runtime is still required, as for the base app. Use --plain
+when opening the app on native Windows; slash commands work in text mode.
+
+1. MAKE YOUR FIRST MOD
+
+   Quit the app. In Terminal, choose a NEW folder for your project:
+
+       mkdir my-solar-mod
+       cd my-solar-mod
+       sol-sim --mod-template solar-mod.json
+
+   This creates a complete, editable fictional example: Aurora, planets
+   Azure and Ember, and Azure's moon Lumen. It does not overwrite a file.
+   You can also copy solar-mod.json from the downloaded app folder.
+
+   Open solar-mod.json in a plain-text editor. On macOS TextEdit, use
+   Format > Make Plain Text. Keep the .json extension and straight quotes.
+   Change the id, name, description and body names/values. See the fields
+   below. Keep the template's JSON structure; no comments or trailing commas.
+
+2. CHECK AND INSTALL LOCALLY
+
+       sol-sim --check-mod solar-mod.json
+       sol-sim --offline -m "./solar-mod.json"
+       sol-sim
+
+   Validation reports errors without installing anything. A successful
+   install copies the JSON to mods/ID.json inside the app copy you launch.
+   The install message gives the exact command to activate your catalogue.
+   With the unedited template, type these INSIDE Solar Sim:
+
+       /mods
+       /mod aurora-system
+       /planet
+       /body Azure
+       /orbit
+       /moons Azure
+       /body Lumen
+       /compare Azure Ember
+       /mod exit
+
+   In orbit mode, selecting Lumen focuses its orbit around Azure. /moons
+   Azure shows all included moon orbits. Left/Right changes camera zoom.
+   /camera system returns to the numbered map. /time and /speed animate
+   the system using the supplied orbital elements. /sources and /export
+   retain the community label and the system's own coordinate frame.
+
+   /mod exit restores normal planets; /dwarf opens dwarfs. Existing
+   /proxima centauri and /interstellar commands continue to work.
+   The arrow menu includes installed community systems under Mods.
+   /body NAME works for any body, including names that match commands.
+   Quote names containing spaces in comparisons: /compare "Blue World" Ember.
+
+3. SHARE YOUR MOD WITH ANYONE
+
+   Create your own PUBLIC GitHub repository, for example my-solar-mod.
+   In the GitHub website, add/upload solar-mod.json at the repository ROOT,
+   next to README.txt or README.md, and commit the file. It must not be
+   hidden in a ZIP or a subfolder for the short owner/repo install command.
+
+   GitHub help:
+   https://docs.github.com/en/repositories/creating-and-managing-repositories/quickstart-for-repositories
+   https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository
+
+   Share this Terminal command, replacing YOUR-NAME with your GitHub name:
+
+       sol-sim -m "YOUR-NAME/my-solar-mod"
+
+   Users can also install from the repository page link:
+
+       sol-sim -m "https://github.com/YOUR-NAME/my-solar-mod"
+
+   The app reads solar-mod.json from the repository's DEFAULT branch.
+   Main, master or another default branch all work. No edit to Solar Sim's
+   registry, app code or official repository is required. Users need no
+   GitHub account to download public data. Private repositories are not
+   supported by the unauthenticated installer.
+
+   Put this in your mod README, using YOUR actual id:
+     Requires Solar Sim v1.10.0+ and Python 3.10+.
+     Install: sol-sim -m "YOUR-NAME/my-solar-mod"
+     Open inside the app: /mod YOUR-ID
+     Return: /mod exit
+   Explain whether your system is real or fictional, list sources and
+   estimates, and describe what changed in each version.
+
+   Other filenames/paths work with a direct GitHub JSON link, for example:
+
+       sol-sim -m "https://github.com/YOUR-NAME/my-solar-mod/blob/main/data/system.json"
+
+   A raw.githubusercontent.com JSON link also works. For other hosting,
+   download the JSON yourself, then use -m with that local file. The app
+   does not download or execute a repository's Python, shell or JavaScript.
+
+4. UPDATE OR REMOVE A MOD
+
+   For an update, increase version (for example 1.0.0 to 1.0.1), validate,
+   and commit the new JSON to the same repository. Users repeat the SAME
+   original install command. Local authors repeat -m "./solar-mod.json".
+   A newer installed package is not downgraded by an older download.
+
+   Mods belong to each app copy. sol-sim -u preserves installed mods/.
+   To uninstall, leave the catalogue with /mod exit, close the app, and
+   delete only mods/YOUR-ID.json inside that app folder. /mods lists the
+   installed catalogues; it does not search GitHub or approve their content.
+   If you change an id, it becomes a different mod; remove the old copy
+   separately. Keep an id stable when releasing an update.
+
+5. TOP-LEVEL JSON FIELDS (ALL REQUIRED)
+
+   format       2, as a number. The old curated packages use format 1.
+   id           Your unique identifier: 3-48 lowercase letters/digits,
+                starting with a letter, optionally separated by hyphens.
+                Example: aurora-system. No spaces, underscores, slashes,
+                dots or doubled hyphens. proxima-centauri, interstellar
+                exit/help/tutorial/inner/outer and Windows device names
+                are reserved too.
+   name         Display name, 1-64 printable characters.
+   description  One printable line, 1-1200 characters.
+   version      Three numbers in quotes: "1.0.0". Increase for updates.
+   app_min      "1.10.0" or newer. All format 2 mods need this framework.
+   fictional    true for an invented system, false for a real system.
+   sources      A list of up to 12 HTTPS links (300 characters each).
+                [] is allowed for fictional systems. Real systems need
+                at least one source; the author is responsible for accuracy.
+   bodies       A list of 2-64 body objects: one center and its orbiters.
+
+   Use the exact fields from the template. Unsupported fields are rejected
+   so spelling errors do not silently change the model. Printable text is
+   allowed; terminal control sequences are rejected.
+
+6. REQUIRED BODY FIELDS
+
+   name         Unique name, 1-48 characters. Start with a letter/digit;
+                then letters, digits, spaces, dots, underscores or hyphens.
+                Names/aliases are case-insensitive when selecting a body.
+   kind         "Star", "Black hole", "Planet", "Dwarf planet" or "Moon".
+   parent       null for the first central body. Otherwise the EXACT name
+                of another body, including case, for example "Azure".
+   mass         Kilograms, from 1e10 through 1e40. JSON numbers support
+                scientific notation: 5.9722e24, without quotes or commas.
+   radius       Mean radius in KILOMETERS, from 0.001 through 1e10.
+                For a black hole this is a drawing/reference scale;
+                the app does not solve Kerr geometry or a horizon model.
+   orbit        Semi-major axis around the PARENT in KILOMETERS.
+                Center: 0. Others: 0.001 through 1e13.
+                Do not put an AU value here; 1 AU is 149597870.7 km.
+   period       Orbital period in EARTH DAYS around the parent.
+                Center: 0. Others: 0.0001 through 1e9.
+   rotation     Sidereal rotation in HOURS, -1000000 through 1000000.
+                Negative is retrograde; 0 means unknown/unspecified.
+                It is not the orbital period or a measured solar day.
+   temperature  A printable description, 1-1200 characters. "Unknown" works.
+   composition  A printable description, 1-1200 characters.
+   atmosphere   A printable description, 1-1200 characters.
+   features     Notes, uncertainty and/or fictional context, 1-1200 characters.
+   color        Integer 1-7: red, green, yellow, blue, magenta, cyan, white.
+
+   The first body MUST be the one Star or Black hole, with parent null,
+   orbit 0, period 0 and eccentricity 0. Other Stars/Black holes are not
+   supported in this format. Planets/dwarfs orbit the central body. Moons
+   orbit planets, dwarfs or other moons; parent chains may contain at most
+   eight bodies and must have no cycles. The input order after the center
+   can vary. Distinct parent systems retain their own moon numbering.
+
+   Unknown mass/radius/orbit/period still need numeric model values for
+   the drawing. Mark estimates and explain placeholders in features; do
+   not present them as measured. Text fields can say "Unknown".
+
+7. OPTIONAL BODY FIELDS
+
+   aliases            List of up to 8 alternative names, using the same
+                      rules as names. All names/aliases must be unique
+                      across the whole catalogue, ignoring case. core
+                      is reserved for the central body.
+   estimated_mass     true/false, defaults to true.
+   estimated_radius   true/false, defaults to true.
+   eccentricity       0 to less than 0.95; default 0 (a circle).
+   inclination        0-180 DEGREES; default 0.
+   node               Ascending-node angle, 0 to less than 360 degrees.
+   periapsis          Argument of periapsis, 0 to less than 360 degrees.
+   phase              Mean anomaly at 2000-01-01 12:00 UTC, in degrees
+                      from 0 to less than 360. Default 0.
+
+   Omitted angles are 0. The orbit model uses Keplerian ellipses and sums
+   parent-relative positions, including moons. Bodies do not gravitationally
+   perturb each other. Author-provided phase/plane values are not a live
+   ephemeris. Dates remain within the app's existing supported clock range.
+
+8. COMMON FIXES AND LIMITS
+
+   Invalid JSON: use straight double quotes, lowercase true/false/null,
+     no comments, and no comma after the last field/list item.
+   Duplicate name/alias: change both the name and copied aliases when
+     duplicating a body. Update parent references to match renamed bodies.
+   Version too old: update the app with sol-sim -u; older downloads need
+     the latest app ZIP before they recognize community mod commands.
+   Repository error: check that it is public and solar-mod.json is at the
+     root of the default branch. Share a direct JSON link for other paths.
+   Invalid installed package: /mods reports the filename and validation
+     error. Correct it, then reinstall the original JSON/repository source.
+   File already exists: --mod-template never overwrites; choose a new
+     filename/folder, or edit your existing file.
+
+   Each package is limited to 64 KiB. Only validated JSON is installed.
+   Python code, custom screensavers, mission code, images, audio, textures,
+   multiple central stars and changes to base planets are outside this
+   data-mod format. Themes/screensavers are still app features. Community
+   systems are separate catalogues; cross-system distances are not modeled.
+
+   Full-screen graphics need macOS/Linux with curses; Windows supports
+   plain commands/snapshots as in the base app. No extra packages are needed.
+
+9. TRY THE COMPLETE PUBLIC EXAMPLE
+
+   The Solar Sim repository contains the same editable solar-mod.json at
+   its root, so this real repository install works without creating your own:
+
+       sol-sim -m "gtts-ux/solar-sim"
+
+   Then inside the app use /mod aurora-system. This installs the sample
+   DATA CATALOGUE, not another copy of the application.
+
+   Read this guide again: sol-sim --mod-tutorial, or /mod tutorial in the app.

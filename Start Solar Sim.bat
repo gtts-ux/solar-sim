@@ -1,6 +1,5 @@
 @echo off
 setlocal
-cd /d "%~dp0"
 set "PYTHONDONTWRITEBYTECODE=1"
 py -3 -c "import sys; sys.exit(sys.version_info < (3, 10))" >nul 2>&1
 if not errorlevel 1 goto run_py
@@ -12,12 +11,12 @@ pause
 exit /b 1
 
 :run_py
-py -3 -B solar_sim.py --plain %*
+py -3 -B "%~dp0solar_sim.py" --plain %*
 set "solar_exit=%ERRORLEVEL%"
 goto finish
 
 :run_python
-python -B solar_sim.py --plain %*
+python -B "%~dp0solar_sim.py" --plain %*
 set "solar_exit=%ERRORLEVEL%"
 
 :finish

@@ -1,13 +1,17 @@
 """Install and validate registered, data-only system mods. No mod code is executed."""
 import json
+import base64
 import math
 import os
 from pathlib import Path
 import tempfile
+import re
 from urllib.error import URLError
+from urllib.parse import urlsplit, unquote
 
 from catalog import Body
 from updater import UpdateError, fetch_bytes, version
+import community_mods
 
 MOD_ID = 'proxima-centauri'
 MOD_URL = 'https://raw.githubusercontent.com/gtts-ux/proxima-centauri-mod/main/proxima-centauri.json'
@@ -31,6 +35,9 @@ class ModError(ValueError):
 
 
 def validate(content, mod_id=MOD_ID):
+    if mod_id not in REGISTRY:
+        try:return community_mods.validate(content,mod_id)
+        except ValueError as error:raise ModError(str(error)) from error
     try:
         spec = REGISTRY[mod_id]
         if len(content) > LIMIT:
@@ -88,7 +95,10 @@ def validate(content, mod_id=MOD_ID):
 
 
 def load(folder, mod_id=MOD_ID):
-    spec = REGISTRY[mod_id]
+    if mod_id not in REGISTRY:
+        try:community_mods.identifier(mod_id)
+        except ValueError as error:raise ModError(str(error)) from error
+    spec = REGISTRY.get(mod_id,{'name':mod_id,'command':'mod '+mod_id})
     path = Path(folder)/(mod_id+'.json')
     if not path.is_file():
         raise ModError(spec['name']+' is not installed. In your terminal run: sol-sim -m"'+spec['command']+'"\nThen open /'+spec['command']+' in the app.')
@@ -100,6 +110,7 @@ def load(folder, mod_id=MOD_ID):
 
 
 def bodies(data):
+    if data['format']==2:return community_mods.bodies(data)
     return [Body(**entry, estimated_mass=bool(index)) for index, entry in enumerate(data['bodies'])]
 
 
@@ -111,7 +122,7 @@ def install(root, name, *, fetch=fetch_bytes, offline=False):
     elif normalized in ('interstellar', 'interstellar mod'):
         mod_id = 'interstellar'
     else:
-        raise ModError('Unknown mod. Available: proxima centauri, interstellar. Use sol-sim -m"interstellar".')
+        return install_community(root,name,fetch=fetch,offline=offline)
     spec = REGISTRY[mod_id]
     source = 'bundled package (offline)'
     content = None
@@ -125,6 +136,11 @@ def install(root, name, *, fetch=fetch_bytes, offline=False):
         with (root/'mod_catalogue'/f'{mod_id}.json').open('rb') as bundled:
             content = bundled.read(LIMIT+1)
     data = validate(content, mod_id)
+    return store_package(root,data,content,source,spec)
+
+
+def store_package(root,data,content,source,spec):
+    mod_id=data['id']
     if version((root/'VERSION.txt').read_text()) < version(data['app_min']):
         raise ModError('This mod needs Solar Sim '+data['app_min']+' or newer. Run sol-sim -u first.')
     folder = root/'mods'
@@ -133,8 +149,9 @@ def install(root, name, *, fetch=fetch_bytes, offline=False):
         raise ModError('The mod folder and package must not be symbolic links.')
     folder.mkdir(exist_ok=True)
     if target.exists():
-        previous = load(folder, mod_id)
-        if version(previous['version']) > version(data['version']):
+        try:previous = load(folder, mod_id)
+        except ModError:previous = None  # Explicit installation can repair an invalid local package.
+        if previous is not None and version(previous['version']) > version(data['version']):
             return 'Kept installed '+spec['name']+' '+previous['version']+'; the available package is older.\nOpen /'+spec['command']+' in the app.'
     temporary = None
     try:
@@ -151,6 +168,125 @@ def install(root, name, *, fetch=fetch_bytes, offline=False):
     return ('Installed '+spec['name']+' '+data['version']+' / '+source+'\n'
             'Start sol-sim, then type /'+spec['command']+alias+'.\n'
             '/'+spec['exit']+' returns to the Solar System. Re-run -m to update the mod.')
+
+
+def parse_package(content):
+    try:
+        if len(content)>LIMIT:raise ValueError('Package exceeds 64 KiB.')
+        data=json.loads(content)
+        if not isinstance(data,dict) or not isinstance(data.get('id'),str):raise ValueError('Package needs a string id.')
+        return validate(content,data['id'])
+    except (ValueError,TypeError,UnicodeError,RecursionError) as error:
+        raise ModError(str(error)) from error
+
+
+def repository(value):
+    """A public GitHub owner/repo; the contents API selects its default branch."""
+    match=re.fullmatch(r'([A-Za-z0-9][A-Za-z0-9-]{0,38})/([A-Za-z0-9][A-Za-z0-9_.-]{0,99})',value)
+    return match.group(1)+'/'+match.group(2).removesuffix('.git') if match else None
+
+
+def download_community(source,fetch):
+    repo=repository(source)
+    url=None
+    if source.startswith('https://'):
+        try:
+            parsed=urlsplit(source)
+            port=parsed.port
+        except ValueError as error:
+            raise ModError('Invalid GitHub HTTPS URL: '+str(error)) from error
+        if parsed.username or parsed.password or port not in (None,443) or parsed.query or parsed.fragment:
+            raise ModError('Use a plain public GitHub repository or raw JSON HTTPS URL.')
+        parts=parsed.path.strip('/').split('/')
+        if parsed.hostname=='github.com' and len(parts)==2:
+            repo=repository('/'.join(parts))
+        elif parsed.hostname=='github.com' and len(parts)>=5 and parts[2]=='blob' and repository('/'.join(parts[:2])):
+            url='https://raw.githubusercontent.com/'+'/'.join(parts[:2]+parts[3:])
+        elif parsed.hostname=='raw.githubusercontent.com' and len(parts)>=4 and repository('/'.join(parts[:2])):
+            url=source
+        else:
+            raise ModError('Share owner/repo, a github.com/.../blob/... JSON link or a raw.githubusercontent.com JSON link. Other downloads can be installed as local files.')
+    if url is not None:
+        if not unquote(urlsplit(url).path).lower().endswith('.json'):raise ModError('The download link must point to a .json file.')
+        return fetch(url,LIMIT)
+    if repo:
+        url='https://api.github.com/repos/'+repo+'/contents/solar-mod.json'
+        try:
+            raw=fetch(url,LIMIT*2)
+            if len(raw)>LIMIT*2:raise ValueError('Repository metadata exceeds 128 KiB.')
+            metadata=json.loads(raw)
+            if not isinstance(metadata,dict) or metadata.get('type')!='file' or metadata.get('encoding')!='base64':
+                raise ValueError('Expected a JSON file, not a directory.')
+            if type(metadata.get('size')) is not int or not 0<metadata['size']<=LIMIT:
+                raise ValueError('Package exceeds 64 KiB or is empty.')
+            encoded=metadata.get('content')
+            if not isinstance(encoded,str) or len(encoded)>LIMIT*2:raise ValueError('Missing package content.')
+            content=base64.b64decode(encoded.replace('\n',''),validate=True)
+            if len(content)!=metadata['size'] or len(content)>LIMIT:raise ValueError('Package size mismatch.')
+            return content
+        except (ValueError,TypeError,UnicodeError,RecursionError) as error:
+            raise ModError('Cannot read repository solar-mod.json: '+str(error)) from error
+    raise ModError('Unknown mod. Use proxima centauri, interstellar, a local .json file, or GitHub owner/repo. Read sol-sim --mod-tutorial.')
+
+
+def install_community(root,source,*,fetch=fetch_bytes,offline=False):
+    source=source.strip()
+    if not source or len(source)>2048:raise ModError('Choose a local JSON file or public GitHub mod repository.')
+    local=not source.startswith(('https://','http://')) and (source.lower().endswith('.json') or source.startswith(('./','../','/','~')))
+    if local:
+        path=Path(source).expanduser()
+        if not path.is_file():raise ModError('Unknown mod or missing JSON file: '+source)
+        with path.open('rb') as file:content=file.read(LIMIT+1)
+        label='local JSON file'
+    else:
+        if offline:raise ModError('This mod source needs internet. Download its JSON first, then install that local file with --offline -m PATH.')
+        try:content=download_community(source,fetch)
+        except (OSError,URLError,UpdateError) as error:
+            raise ModError('Cannot download mod: '+str(error)+'\nRepository installs require solar-mod.json at the repository root; use a direct file link for other paths.') from error
+        label='public GitHub package'
+    data=parse_package(content)
+    if data['format']==1:
+        spec=REGISTRY[data['id']]
+    else:
+        spec={'name':data['name'],'command':'mod '+data['id'],'exit':'mod exit'}
+    result=store_package(root,data,content,label,spec)
+    return result+'\nCommunity updates: repeat the same original file/repository install command.'
+
+
+def installed(folder):
+    valid=[];errors=[]
+    folder=Path(folder)
+    if not folder.is_dir():return valid,errors
+    for path in sorted(folder.glob('*.json')):
+        try:
+            data=load(folder,path.stem)
+            valid.append(data)
+        except (ModError,OSError,ValueError) as error:
+            errors.append((path.name,str(error)))
+    return valid,errors
+
+
+def check_cli(source):
+    try:
+        with Path(source).expanduser().open('rb') as file:data=parse_package(file.read(LIMIT+1))
+        print('Valid mod: '+data.get('name',REGISTRY.get(data['id'],{}).get('name',data['id']))+
+              ' / '+data['id']+' / v'+data['version']+' / '+str(len(data['bodies']))+' bodies')
+        print('Requires Solar Sim '+data['app_min']+' or newer. Nothing was installed.')
+        return 0
+    except (OSError,ModError) as error:
+        print('Mod validation failed: '+str(error));return 1
+
+
+def template_cli(root,destination):
+    try:
+        path=Path(destination).expanduser()
+        if path.suffix.lower()!='.json':raise ModError('Choose a .json filename, for example solar-mod.json.')
+        content=(Path(root)/'solar-mod.json').read_bytes()
+        with path.open('xb') as output:output.write(content)
+        print('Created mod template: '+str(path.resolve())+'\nEdit it, then run: sol-sim --check-mod "'+str(path)+'"\nRead sol-sim --mod-tutorial for the full walkthrough.')
+        return 0
+    except (OSError,ModError) as error:
+        print('Could not create template: '+str(error));return 1
 
 
 def install_cli(root, name, offline=False):

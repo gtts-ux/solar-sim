@@ -1,0 +1,107 @@
+{
+  "format": 2,
+  "id": "aurora-system",
+  "name": "Aurora System",
+  "description": "An original fictional star system. Example values illustrate the mod format; they are not discoveries or a live ephemeris.",
+  "version": "1.0.0",
+  "app_min": "1.10.0",
+  "fictional": true,
+  "sources": [],
+  "bodies": [
+    {
+      "name": "Aurora",
+      "kind": "Star",
+      "parent": null,
+      "mass": 1.9885e+30,
+      "radius": 695700,
+      "orbit": 0,
+      "period": 0,
+      "rotation": 600,
+      "temperature": "Fictional example; no measured temperature.",
+      "composition": "A fictional hydrogen/helium star.",
+      "atmosphere": "Unspecified in this fictional example.",
+      "features": "The local coordinate origin; values chosen for the example.",
+      "color": 3,
+      "estimated_mass": true,
+      "estimated_radius": true,
+      "aliases": [
+        "aurora star"
+      ]
+    },
+    {
+      "name": "Azure",
+      "kind": "Planet",
+      "parent": "Aurora",
+      "mass": 5.9722e+24,
+      "radius": 6371,
+      "orbit": 149597870.7,
+      "period": 365.25,
+      "rotation": 24,
+      "temperature": "Fictional example; no measured temperature.",
+      "composition": "A fictional rocky ocean world.",
+      "atmosphere": "Unspecified in this fictional example.",
+      "features": "The inner example planet. /moons Azure opens the included moon orbits.",
+      "color": 4,
+      "estimated_mass": true,
+      "estimated_radius": true,
+      "aliases": [
+        "blue world"
+      ],
+      "eccentricity": 0.02,
+      "inclination": 2,
+      "node": 15,
+      "periapsis": 30,
+      "phase": 25
+    },
+    {
+      "name": "Lumen",
+      "kind": "Moon",
+      "parent": "Azure",
+      "mass": 7.35e+22,
+      "radius": 1737.4,
+      "orbit": 384400,
+      "period": 27.3,
+      "rotation": 655.2,
+      "temperature": "Fictional example; no measured temperature.",
+      "composition": "A fictional rocky moon.",
+      "atmosphere": "Unspecified in this fictional example.",
+      "features": "Its orbit is relative to Azure, not directly to Aurora.",
+      "color": 7,
+      "estimated_mass": true,
+      "estimated_radius": true,
+      "aliases": [
+        "azure moon"
+      ],
+      "eccentricity": 0.04,
+      "inclination": 5,
+      "node": 40,
+      "periapsis": 20,
+      "phase": 145
+    },
+    {
+      "name": "Ember",
+      "kind": "Planet",
+      "parent": "Aurora",
+      "mass": 6.4e+23,
+      "radius": 3389,
+      "orbit": 228000000,
+      "period": 687,
+      "rotation": 24.6,
+      "temperature": "Fictional example; no measured temperature.",
+      "composition": "A fictional dusty, iron-rich rocky world.",
+      "atmosphere": "Unspecified in this fictional example.",
+      "features": "The outer example planet. Add more bodies by copying this object and changing its name, aliases and values.",
+      "color": 1,
+      "estimated_mass": true,
+      "estimated_radius": true,
+      "aliases": [
+        "red world"
+      ],
+      "eccentricity": 0.09,
+      "inclination": 3,
+      "node": 70,
+      "periapsis": 15,
+      "phase": 210
+    }
+  ]
+}

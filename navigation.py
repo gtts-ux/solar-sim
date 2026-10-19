@@ -28,22 +28,22 @@ class Page:
     index: int = 0
 
 
-def body_item(body):
+def body_item(body,catalogue=None):
     dwarf = body in DWARF_PLANETS or lookup(body.parent or '') in DWARF_PLANETS
     proxima = body.name.startswith('Proxima Centauri')
     interstellar = body.kind.startswith('Fictional ')
     name = shlex.quote(body.name)
     def action(label, command, detail):
-        return Item(label, detail, command if isinstance(command,tuple) else (command,), catalogue='interstellar' if interstellar else 'proxima' if proxima else 'dwarf' if dwarf else 'planets')
+        return Item(label, detail, command if isinstance(command,tuple) else (command,), catalogue=catalogue or ('interstellar' if interstellar else 'proxima' if proxima else 'dwarf' if dwarf else 'planets'))
     actions = [action('Profile', ('/back','/'+name), 'Size, mass, composition, history and references.'),
                action('Orbit view', '/orbit '+name, 'Open the numbered orbit map around this object.')]
     if not isinstance(body, Spacecraft):
         if body is not SUN:
-            if body in (*PLANETS,*DWARF_PLANETS):
+            if body in (*PLANETS,*DWARF_PLANETS) or body.kind in ('Planet','Dwarf planet') or (catalogue and catalogue.startswith('community:') and body.known_moons):
                 actions += [action('Moons', '/moons '+name, 'List included natural moons; in orbit mode, show their orbits.')]
             actions += [action('Spacecraft', '/satellites '+name, 'List included artificial satellites around this object.')]
         actions += [action('Day length', '/day '+name, 'Mean solar day and sidereal rotation.')]
-    return Item(body.name, body.kind+' / '+(body.parent or 'Solar system'), children=tuple(actions))
+    return Item(body.name, body.kind+' / '+(body.parent or ('Local community system' if catalogue and catalogue.startswith('community:') else 'Solar system')), children=tuple(actions))
 
 
 class Navigation:
@@ -104,13 +104,19 @@ class Navigation:
                     Item('Export snapshot', 'Save the current simulation to exports/.', ('/export',)),
                     Item('Quit', 'Close the observatory.', ('/quit',)))
         if section == 'Mods':
+            packages,_=sim.installed_mods()
+            community=tuple(Item(p['name'],'Community / v'+p['version'],('/mod '+p['id'],)) for p in packages if p['format']==2)
             return (Item('Proxima Centauri', 'Install in terminal: sol-sim -m"proxima centauri". Enter opens an installed mod.', ('/proxima centauri',)),
                     Item('Interstellar', 'Gargantua and the film worlds. Install: sol-sim -m"interstellar".', ('/interstellar',)),
-                    Item('Return to Solar System', 'Leave the optional system catalogue.', ('/interstellar exit' if sim.interstellar_mode else '/proxima exit',)))
+                    *community,
+                    Item('Installed mods', 'List installed versions and diagnose invalid packages.', ('/mods',)),
+                    Item('Create a mod', 'Tutorial, template, validation and public sharing.', ('/mod tutorial',)),
+                    Item('Return to Solar System', 'Leave the optional system catalogue.', ('/mod exit',)))
         if section in ('Planets', 'Moons', 'Spacecraft', 'Dwarfs'):
-            bodies = {'Planets': tuple(sim.mod_bodies) if sim.mod_mode else (SUN,*PLANETS), 'Moons': tuple(b for b in MOONS if b in sim.visible_bodies),
+            bodies = {'Planets': (sim.mod_bodies[0],*sim.primary_bodies) if sim.community_mode else tuple(sim.mod_bodies) if sim.mod_mode else (SUN,*PLANETS),
+                      'Moons': tuple(b for b in sim.mod_bodies if b.kind=='Moon') if sim.community_mode else tuple(b for b in MOONS if b in sim.visible_bodies),
                       'Spacecraft': tuple(b for b in SPACECRAFT if b in sim.visible_bodies), 'Dwarfs': DWARF_PLANETS}[section]
-            entries = tuple(body_item(body) for body in bodies)
+            entries = tuple(body_item(body,'community:'+sim.mod_id if sim.community_mode and body in sim.mod_bodies else None) for body in bodies)
             if section == 'Dwarfs':
                 entries += (Item('Return to normal planets', 'Leave the separate dwarf catalogue.', ('/dwarf exit',)),)
             return entries
@@ -186,15 +192,17 @@ class Navigation:
         if '/back' in commands:
             # Overview/profile actions leave the overlay and the underlying view.
             sim.overlay = None
-        if item.catalogue == 'proxima' and not sim.proxima_mode:
+        if item.catalogue.startswith('community:') and (not sim.community_mode or item.catalogue!='community:'+sim.mod_id):
+            commands = ('/mod '+item.catalogue.split(':',1)[1],)+commands
+        elif item.catalogue == 'proxima' and not sim.proxima_mode:
             commands = ('/proxima centauri',)+commands
         elif item.catalogue == 'interstellar' and not sim.interstellar_mode:
             commands = ('/interstellar',)+commands
         elif item.catalogue == 'planets' and sim.mod_mode:
-            commands = ('/interstellar exit' if sim.interstellar_mode else '/proxima exit',)+commands
+            commands = ('/mod exit',)+commands
         elif item.catalogue == 'dwarf' and sim.mod_mode:
             commands = ('/dwarf',)+commands
-        elif item.catalogue and item.catalogue not in ('proxima','interstellar') and (item.catalogue=='dwarf') != sim.dwarf_mode:
+        elif item.catalogue and not item.catalogue.startswith('community:') and item.catalogue not in ('proxima','interstellar') and (item.catalogue=='dwarf') != sim.dwarf_mode:
             commands = ('/dwarf' if item.catalogue=='dwarf' else '/dwarf exit',)+commands
         if item.live_id:
             matches = [i for i,launch in enumerate(sim.live_entries,1) if launch.id==item.live_id]

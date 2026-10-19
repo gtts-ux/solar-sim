@@ -157,4 +157,33 @@ GET STARTED WITH SOL-SIM
    /sources explains the film/science background. Existing screensavers stay
    independent of the catalogue. App updates preserve both installed mods.
 
+9. MAKE OR INSTALL A COMMUNITY MOD (v1.10.0 OR NEWER)
+
+   Anyone can share a system without changing the app's code. In Terminal,
+   from your own new project folder:
+
+       sol-sim --mod-template solar-mod.json
+
+   Edit that JSON in a plain-text editor, then:
+
+       sol-sim --check-mod solar-mod.json
+       sol-sim --offline -m "./solar-mod.json"
+
+   Inside the app:
+
+       /mods
+       /mod aurora-system
+       /body Azure
+       /moons Azure
+       /mod exit
+
+   The template includes planets and a moon. Change its id for your own mod.
+   Share solar-mod.json at the root of your public GitHub repository. Anyone
+   can install it with: sol-sim -m "YOUR-NAME/YOUR-REPOSITORY"
+   For a working public example: sol-sim -m "gtts-ux/solar-sim"
+   Community systems also appear under Mods in the arrow menu.
+
+   The full tutorial is in MODDING.txt, sol-sim --mod-tutorial or /mod tutorial.
+   It covers every field and unit, real/fictional data, updates and removal.
+
 Read /tutorial inside the app, or GETTING_STARTED.txt in the app folder.

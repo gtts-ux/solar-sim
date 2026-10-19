@@ -60,6 +60,11 @@ class DistributionTests(unittest.TestCase):
                                       cwd=temp,text=True,capture_output=True,timeout=30)
                 self.assertEqual(result.returncode,0,result.stderr)
                 self.assertIn('/neptune',result.stdout)
+                project=temp/'Windows mod project';project.mkdir()
+                result=subprocess.run(['cmd','/c',str(extracted/'Start Solar Sim.bat'),'--mod-template','solar-mod.json'],
+                                      cwd=project,text=True,capture_output=True,timeout=30)
+                self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+                self.assertEqual(json.loads((project/'solar-mod.json').read_text())['format'],2)
 
 
 if __name__=='__main__':
