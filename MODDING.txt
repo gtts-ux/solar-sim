@@ -108,9 +108,20 @@ when opening the app on native Windows; slash commands work in text mode.
    A newer installed package is not downgraded by an older download.
 
    Mods belong to each app copy. sol-sim -u preserves installed mods/.
-   To uninstall, leave the catalogue with /mod exit, close the app, and
-   delete only mods/YOUR-ID.json inside that app folder. /mods lists the
-   installed catalogues; it does not search GitHub or approve their content.
+   Open /mods for the arrow-controlled Mods manager. Select a catalogue
+   with Up/Down, press Enter, then choose Open system, Turn off/Turn on,
+   or Uninstall. Escape goes back; Left/Right changes menu sections.
+
+   Commands also work: /mods enable YOUR-ID, /mods disable YOUR-ID,
+   /mods uninstall YOUR-ID. Off keeps the package installed but prevents
+   opening it. Enable permits opening; use /mod YOUR-ID to view it.
+   Disabling or removing the viewed catalogue returns to the Solar System.
+   Changes are saved in mods/.state.json for this app copy and survive
+   app updates. Updating a disabled mod keeps it off; reinstalling after
+   uninstall starts on. Uninstall removes only mods/YOUR-ID.json and its
+   switch preference, leaving your authoring files and other mods intact.
+   /mods lists installed catalogues; it does not search GitHub or approve
+   their content. Invalid packages can be uninstalled from the same menu.
    If you change an id, it becomes a different mod; remove the old copy
    separately. Keep an id stable when releasing an update.
 

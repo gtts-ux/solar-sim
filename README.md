@@ -99,7 +99,7 @@ sol-sim --check-mod solar-mod.json
 sol-sim --offline -m "./solar-mod.json"
 ```
 
-Then start the app and use `/mods`, `/mod aurora-system`, `/body Azure`, `/moons Azure`, `/orbit` and `/mod exit`. Change the template's `id` and other fields for your own system. The [editable example](solar-mod.json) includes two planets and a moon, with parent-relative eccentric and inclined orbits. Installed catalogues appear in the arrow menu under **Mods**.
+Then start the app and use `/mods`, `/mod aurora-system`, `/body Azure`, `/moons Azure`, `/orbit` and `/mod exit`. Change the template's `id` and other fields for your own system. The [editable example](solar-mod.json) includes two planets and a moon, with parent-relative eccentric and inclined orbits. Installed catalogues appear in the arrow menu under **Mods**. Type `/mods` to open the manager directly: use Up/Down and Enter to select a mod, then **Open system**, **Turn on/off** or **Uninstall**. Escape goes back. Off keeps files installed; switches persist across restarts and app updates. Turning off or uninstalling the viewed system returns to the Solar System. Commands: `/mods enable ID`, `/mods disable ID`, `/mods uninstall ID`.
 
 To share, upload **solar-mod.json** to the **root of your own public GitHub repository** and give people `sol-sim -m "YOUR-NAME/YOUR-REPOSITORY"`. The installer uses that repository's default branch, copies only validated JSON and never executes repository code. No app pull request or manual registration is required. To try a working public example, `sol-sim -m "gtts-ux/solar-sim"` installs this repository's Aurora sample data catalogue.
 

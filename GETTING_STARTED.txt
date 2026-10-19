@@ -187,3 +187,12 @@ GET STARTED WITH SOL-SIM
    It covers every field and unit, real/fictional data, updates and removal.
 
 Read /tutorial inside the app, or GETTING_STARTED.txt in the app folder.
+
+MANAGE INSTALLED MODS
+
+   Type /mods for the Mods menu. Up/Down chooses a mod; Enter opens its
+   actions: Open system, Turn off/Turn on, Uninstall. Escape goes back.
+   Switches are saved. Off keeps the package; uninstall removes it.
+   Turning off or removing the viewed system returns to the Solar System.
+   You can also type /mods enable ID, /mods disable ID, or
+   /mods uninstall ID, using the IDs listed by /mods.

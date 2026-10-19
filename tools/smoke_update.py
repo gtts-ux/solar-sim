@@ -58,11 +58,25 @@ def main():
         assert 'public GitHub package' in app_command('-m','gtts-ux/solar-sim')
         community=(root/'mods/aurora-system.json').read_bytes()
         assert json.loads(community)['format']==2
+        assert 'turned off' in app_command('--offline','-c','/mods disable aurora-system')
+        mod_state=(root/'mods/.state.json').read_bytes()
+        # Exercise a real upgrade while switches and all installed packages exist.
+        (root/'VERSION.txt').write_text('0.0.0\n')
+        assert run_update(root,fetch=published) is not None
+        assert (root/'mods/.state.json').read_bytes()==mod_state
         assert run_update(root,fetch=published) is None
         assert (root/'mods/proxima-centauri.json').read_bytes()==installed
         assert (root/'mods/interstellar.json').read_bytes()==film
         assert (root/'mods/aurora-system.json').read_bytes()==community
-    print('Published ZIP/checksum downloaded successfully; upgrade, saved settings, curated mods, community creation/validation/local and public GitHub installation, moon orbits/comparison and repeat check passed.')
+        result=subprocess.run([sys.executable,str(root/'solar_sim.py'),'--offline','-c','/mod aurora-system'],capture_output=True,text=True,timeout=20)
+        assert 'This mod is turned off' in result.stdout,result.stdout
+        assert 'turned on' in app_command('--offline','-c','/mods enable aurora-system')
+        assert 'COMMUNITY SYSTEM' in app_command('--offline','-c','/mod aurora-system')
+        assert 'uninstalled' in app_command('--offline','-c','/mods uninstall aurora-system')
+        assert not (root/'mods/aurora-system.json').exists()
+        assert (root/'mods/proxima-centauri.json').read_bytes()==installed
+        assert (root/'mods/interstellar.json').read_bytes()==film
+    print('Published ZIP/checksum downloaded successfully; upgrade, saved settings and mod switches, curated mods, community creation/validation/local and public GitHub installation, moon orbits/comparison, mod enable/disable/uninstall and repeat check passed.')
 
 
 if __name__=='__main__':main()

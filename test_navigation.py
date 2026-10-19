@@ -191,6 +191,16 @@ class TUIArrowTests(unittest.TestCase):
             tui(screen,self.sim,no_color=True)
         return previews,screen
 
+    def test_mods_command_immediately_focuses_management_arrows(self):
+        import shutil
+        self.sim.mods_path=self.root/'mods';self.sim.mods_path.mkdir()
+        source=Path(__file__).resolve().parent/'mod_catalogue/interstellar.json'
+        shutil.copyfile(source,self.sim.mods_path/'interstellar.json')
+        self.run_keys([*'/mods\r','\r',258,'\r','\r',258,'\r'])
+        # Enter mod -> down to Turn off -> Enter -> Enter turns on -> down -> uninstall.
+        self.assertFalse((self.sim.mods_path/'interstellar.json').exists())
+        self.assertFalse(self.sim.mod_mode)
+
     def test_settings_arrows_select_and_preview_saver_then_apply_theme_without_zoom(self):
         self.sim.command('/orbit jupiter')
         previews,_=self.run_keys([*'/setting\r',258,'\r',258,258,'\r',

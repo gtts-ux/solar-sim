@@ -6,7 +6,7 @@ from pathlib import Path
 import shlex
 
 from catalog import AU_KM, lookup
-from mod_manager import ROOT, MOD_ID, REGISTRY, ModError, bodies, load
+from mod_manager import ROOT, MOD_ID, REGISTRY, ModError, bodies, load, require_enabled
 from interstellar import NOTICE as FILM_NOTICE, SOURCE as FILM_SOURCE, describe as film_profile
 
 EPOCH = datetime(2000, 1, 1, 12, tzinfo=timezone.utc)
@@ -206,6 +206,7 @@ class ProximaSupport:
                 self.leave_system()
                 return self.text_map() if self.screen == 'orbit' else 'SOLAR SYSTEM / normal planets restored.\n/planet  /orbit  /dwarf'
             mod_id = 'interstellar' if cmd == 'interstellar' else MOD_ID
+            require_enabled(self.mods_path, mod_id)
             data = load(self.mods_path, mod_id)
             from updater import version
             if version((ROOT/'VERSION.txt').read_text()) < version(data['app_min']):

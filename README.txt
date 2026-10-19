@@ -748,7 +748,7 @@ without a network request:
 
 Only validated JSON data is loaded; no mod code runs. Installed data is in
 mods/proxima-centauri.json. Re-run -m to update; sol-sim -u preserves mods/.
-To uninstall, leave Proxima mode and delete that JSON file. /sources in Proxima
+To uninstall, use /mods uninstall proxima-centauri. /sources in Proxima
 mode lists references; see GETTING_STARTED.txt for the updated tutorial.
 
 INTERSTELLAR MOD / v1.8.0
@@ -852,3 +852,29 @@ Format 2 supports one central star/black hole, planets, dwarfs and moons;
 64 bodies and 64 KiB maximum. Mods are validated data; no repository code is
 executed. Custom Python, mission/screen-saver code and multiple central stars
 are outside this format. Keep original mod projects outside the app folder.
+
+MODS MANAGER / v1.11.0
+=====================
+
+Type /mods to open the Mods section with immediate arrow focus, like
+/setting. Use Up/Down to select a mod, Enter for its actions, and Escape
+to go back. Left/Right switches menu sections. Each installed mod shows
+ON/OFF, version and whether you are viewing it.
+
+Open system views an enabled catalogue. Turn off keeps it installed but
+blocks its activation commands; Turn on makes it available again.
+Uninstall removes only its installed JSON package and switch preference.
+Your source projects and other mods are kept. Invalid packages can also
+be removed here. If you turn off or uninstall the viewed system, you
+return to the Solar System.
+
+Commands work too (use the mod ID listed by /mods):
+    /mods enable proxima-centauri
+    /mods disable proxima-centauri
+    /mods uninstall proxima-centauri
+
+States are saved in mods/.state.json separately for each app copy.
+App updates preserve them. Updating an installed mod keeps its switch
+state; reinstalling after uninstall starts ON. Only one catalogue is
+viewed at a time; ON means available, not combined with other systems.
+Install/reinstall in Terminal: sol-sim -m "proxima centauri"

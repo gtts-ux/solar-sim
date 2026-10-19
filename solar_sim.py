@@ -22,7 +22,7 @@ One star. Eight planets. /dwarf opens five more worlds in a separate mode.
 
 Type /planet to begin, /earth for a detailed profile, or /help for all commands.
 New here? /tutorial walks through starting, exploring and updating with sol-sim.
-Make or share your own system: /mod tutorial. /mods lists installed catalogues.
+Make or share your own system: /mod tutorial. /mods manages installed catalogues.
 Explore the giants with /moons jupiter and /view saturn.
 
 The clock follows the actual current UTC time. /orbit opens full-screen orbits.
@@ -41,6 +41,13 @@ Try /day earth or /mission Apollo 11 1 minute for a timed historical flight.
 
 def completions(line, sim=None):
     """Complete commands and bodies, retaining a slash on direct body commands."""
+    if line.startswith('/mods '):
+        choices=['list','enable ','disable ','uninstall ']
+        if sim:
+            packages,errors=sim.installed_mods()
+            ids=[p['id'] for p in packages]+[name[:-5] for name,_ in errors]
+            choices += [action+' '+mod_id for action in ('enable','disable','uninstall') for mod_id in ids]
+        return ['/mods '+name for name in sorted(set(choices)) if name.startswith(line[6:].lower())]
     if not line.startswith("/"):
         return []
     if line.startswith('/mod '):
@@ -533,6 +540,8 @@ def tui(screen, sim, no_color=False):
                     response = sim.command(command)
                     feedback=response.splitlines()[0] if response else ''
                     words=command.strip().lower().lstrip('/').split()
+                    if words and words[0]=='mods' and not response.startswith(('Could not run command:','File operation failed:')):
+                        navigation.open_mods(sim)
                     if words and (words[0] in ('setting','settings') or settings_input) and words[-1]!='exit' and not response.startswith(('Could not run command:','File operation failed:')):
                         sim.overlay='settings'
                         group=None

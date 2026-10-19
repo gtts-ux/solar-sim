@@ -6,6 +6,7 @@ from catalog import DWARF_PLANETS, MOONS, PLANETS, SUN, lookup
 from flight_replay import FLIGHTS
 from missions import SPACECRAFT, Spacecraft
 from themes import SCREENSAVERS, THEMES
+from mod_manager import REGISTRY, disabled_mods, package_path, ModError
 
 
 @dataclass(frozen=True)
@@ -19,6 +20,7 @@ class Item:
     stay: bool = False
     live_id: str = ''
     catalogue: str = ''
+    mod_id: str = ''
 
 
 @dataclass
@@ -26,6 +28,7 @@ class Page:
     title: str
     items: tuple
     index: int = 0
+    mod_id: str = ''
 
 
 def body_item(body,catalogue=None):
@@ -71,6 +74,24 @@ class Navigation:
             choices=list(THEMES) if group=='theme' else list(SCREENSAVERS)
             self.index=choices.index(sim.settings.theme if group=='theme' else sim.settings.screensaver)
 
+    def open_mods(self,sim):
+        self.change_section(self.sections.index('Mods')-self.section)
+        self.opened=True
+        self.index=0
+
+    def mod_actions(self,sim,mod_id):
+        packages,errors=sim.installed_mods()
+        package=next((p for p in packages if p['id']==mod_id),None)
+        entries=[]
+        if package:
+            off=mod_id in disabled_mods(sim.mods_path)
+            if not off:entries.append(Item('Open system','View this catalogue.',('/mod '+mod_id,)))
+            entries.append(Item('Turn on' if off else 'Turn off',
+                                'Allow this system to open.' if off else 'Keep installed files; return to Solar System if viewing this mod.',
+                                ('/mods '+('enable' if off else 'disable')+' '+mod_id,),stay=True))
+        entries.append(Item('Uninstall','Remove only this installed package. Reinstall with sol-sim -m.',('/mods uninstall '+mod_id,),stay=True))
+        return tuple(entries)
+
     @property
     def title(self):
         return self.pages[-1].title if self.pages else self.sections[self.section]
@@ -88,6 +109,13 @@ class Navigation:
 
     def items(self, sim):
         if self.pages:
+            if self.pages[-1].mod_id:
+                mod_id=self.pages[-1].mod_id
+                if not (sim.mods_path/(mod_id+'.json')).is_file():self.pages.clear()
+                else:
+                    try:return self.mod_actions(sim,mod_id)
+                    except (ModError,OSError) as error:return (Item('Mod preferences need repair',str(error),('/mods list',)),)
+        if self.pages:
             return self.pages[-1].items
         section = self.sections[self.section]
         if section == 'Views':
@@ -104,12 +132,19 @@ class Navigation:
                     Item('Export snapshot', 'Save the current simulation to exports/.', ('/export',)),
                     Item('Quit', 'Close the observatory.', ('/quit',)))
         if section == 'Mods':
-            packages,_=sim.installed_mods()
-            community=tuple(Item(p['name'],'Community / v'+p['version'],('/mod '+p['id'],)) for p in packages if p['format']==2)
-            return (Item('Proxima Centauri', 'Install in terminal: sol-sim -m"proxima centauri". Enter opens an installed mod.', ('/proxima centauri',)),
-                    Item('Interstellar', 'Gargantua and the film worlds. Install: sol-sim -m"interstellar".', ('/interstellar',)),
-                    *community,
-                    Item('Installed mods', 'List installed versions and diagnose invalid packages.', ('/mods',)),
+            packages,errors=sim.installed_mods()
+            try:disabled=disabled_mods(sim.mods_path)
+            except (ModError,OSError) as error:return (Item('Mod preferences need repair',str(error),('/mods list',)),)
+            entries=[Item(p.get('name',REGISTRY.get(p['id'],{}).get('name',p['id'])),
+                          ('OFF' if p['id'] in disabled else 'ON')+(' / viewing' if sim.mod_mode and sim.mod_id==p['id'] else '')+' / v'+p['version']+' / Enter to manage',mod_id=p['id']) for p in packages]
+            for filename,error in errors:
+                mod_id=filename[:-5]
+                try:package_path(sim.mods_path,mod_id)
+                except (ModError,TypeError):continue
+                entries.append(Item(mod_id+' [invalid]',error+' / Enter to uninstall.',mod_id=mod_id))
+            if not entries:entries.append(Item('No mods installed','In Terminal: sol-sim -m "username/repository". /mod tutorial explains installation.',('/mod tutorial',)))
+            return (*entries,
+                    Item('Installed mods', 'List installed versions and diagnose invalid packages.', ('/mods list',),stay=True),
                     Item('Create a mod', 'Tutorial, template, validation and public sharing.', ('/mod tutorial',)),
                     Item('Return to Solar System', 'Leave the optional system catalogue.', ('/mod exit',)))
         if section in ('Planets', 'Moons', 'Spacecraft', 'Dwarfs'):
@@ -181,6 +216,10 @@ class Navigation:
 
     def activate(self, sim):
         item = self.current(sim)
+        if item and item.mod_id:
+            self.pages.append(Page(item.label,(),mod_id=item.mod_id))
+            self.feedback=''
+            return None
         if item and item.children:
             self.pages.append(Page(item.label,item.children))
             self.feedback = ''
@@ -217,5 +256,9 @@ class Navigation:
                 self.feedback = response.splitlines()[0]
                 return response
         self.feedback = 'Applied: '+item.label
+        if commands and commands[0].startswith(('/mods enable ','/mods disable ')) and self.pages:
+            # Keep Enter on the switch after its action list changes, away from Uninstall.
+            self.index=next(i for i,entry in enumerate(self.items(sim)) if entry.label.startswith('Turn '))
+        if commands and commands[0].startswith('/mods uninstall '):self.pages.clear()
         self.opened = item.stay
         return response

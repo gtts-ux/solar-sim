@@ -8,6 +8,7 @@ import shlex
 from catalog import lookup
 import community_mods as model
 from mod_manager import ROOT, REGISTRY, ModError, bodies, installed, load
+from mod_manager import disabled_mods, require_enabled, set_enabled, uninstall
 from updater import version
 
 
@@ -118,18 +119,24 @@ class CommunitySupport:
     def show_mods(self):
         packages,errors=self.installed_mods(refresh=True)
         rows=['MODS / installed catalogues','']
+        disabled=disabled_mods(self.mods_path)
         for package in packages:
             title=package.get('name',REGISTRY.get(package['id'],{}).get('name',package['id']))
-            rows.append(f"  {title} / v{package['version']} /mod {package['id']}")
+            state='OFF' if package['id'] in disabled else 'ON'
+            if self.mod_mode and self.mod_id==package['id']:state+=' / viewing'
+            rows.append(f"  [{state}] {title} / v{package['version']} /mod {package['id']}")
         if not packages:rows.append('No mods installed yet.')
         if errors:
             rows+=['','INVALID PACKAGES / not loaded']+[name+': '+error for name,error in errors]
         return '\n'.join(rows)+('\n\nInstall in Terminal: sol-sim -m "username/repository" or -m "./solar-mod.json"\n'
                                     'Built-ins: sol-sim -m"proxima centauri" or -m"interstellar"\n'
                                     '/mod ID opens a catalogue; /mod exit returns.\n'
+                                    '/mods enable ID | /mods disable ID | /mods uninstall ID\n'
+                                    'On permits opening a system; Off keeps its installed files. Uninstall removes its installed package.\n'
                                     '/mod tutorial or sol-sim --mod-tutorial explains creation and sharing.')
 
     def activate_mod(self,mod_id):
+        require_enabled(self.mods_path,mod_id)
         if mod_id in REGISTRY:return super()._command('/'+REGISTRY[mod_id]['command'])
         data=load(self.mods_path,mod_id)
         if version((ROOT/'VERSION.txt').read_text())<version(data['app_min']):
@@ -146,7 +153,16 @@ class CommunitySupport:
         parts=shlex.split(raw.strip().lstrip('/'))
         cmd=parts[0].lower() if parts else '';args=parts[1:]
         if cmd=='mods':
-            if args:raise ModError('Usage: /mods. Use /mod ID to open a catalogue.')
+            if args and args!=['list']:
+                if len(args)!=2 or args[0].lower() not in ('enable','disable','uninstall'):
+                    raise ModError('Usage: /mods, /mods enable ID, /mods disable ID or /mods uninstall ID.')
+                action,mod_id=(part.lower() for part in args)
+                if action=='uninstall':uninstall(self.mods_path,mod_id)
+                else:set_enabled(self.mods_path,mod_id,action=='enable')
+                if action!='enable' and self.mod_mode and self.mod_id==mod_id:self.leave_system()
+                self._installed_cache=None
+                self.overlay=None
+                return mod_id+{'enable':' turned on.','disable':' turned off.','uninstall':' uninstalled.'}[action]+'\n\n'+self.show_mods()
             self.overlay=None;self.screen='dashboard';self.orbit_focus=None
             return self.show_mods()
         if cmd=='mod':
@@ -169,7 +185,7 @@ class CommunitySupport:
             self.overlay=None
             return self.open_body(self.body(' '.join(args)))
         if cmd=='help':
-            return super()._command(raw)+'\n\nCOMMUNITY MODS\n  /mods lists installed catalogues; /mod ID opens one; /mod exit returns.\n  /body NAME opens any object. /mod tutorial is the creation guide.\n  Terminal: sol-sim --mod-template solar-mod.json; sol-sim --check-mod solar-mod.json\n  Install: sol-sim -m "username/repository" or -m "./solar-mod.json"'
+            return super()._command(raw)+'\n\nCOMMUNITY MODS\n  /mods manages installed catalogues; /mod ID opens one; /mod exit returns.\n  /mods enable ID /mods disable ID /mods uninstall ID\n  /body NAME opens any object. /mod tutorial is the creation guide.\n  Terminal: sol-sim --mod-template solar-mod.json; sol-sim --check-mod solar-mod.json\n  Install: sol-sim -m "username/repository" or -m "./solar-mod.json"'
         if not self.community_mode:return super()._command(raw)
         # A catalogue cannot take over the simulator's command names.
         from engine import COMMANDS

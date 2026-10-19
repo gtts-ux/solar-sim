@@ -34,6 +34,73 @@ class ModError(ValueError):
     pass
 
 
+def package_path(folder, mod_id):
+    if mod_id not in REGISTRY:
+        try:community_mods.identifier(mod_id)
+        except ValueError as error:raise ModError(str(error)) from error
+    folder=Path(folder)
+    target=folder/(mod_id+'.json')
+    if folder.is_symlink() or target.is_symlink():
+        raise ModError('The mod folder and package must not be symbolic links.')
+    return target
+
+
+def disabled_mods(folder):
+    path=Path(folder)/'.state.json'
+    if Path(folder).is_symlink() or path.is_symlink():
+        raise ModError('The mod folder and preferences must not be symbolic links.')
+    if not path.exists():return set()
+    try:
+        with path.open('rb') as source:data=json.loads(source.read(LIMIT+1))
+        if data.get('format')!=1 or not isinstance(data.get('disabled'),list):raise ValueError()
+        for mod_id in data['disabled']:package_path(folder,mod_id)
+        return set(data['disabled'])
+    except (ValueError,TypeError,AttributeError) as error:
+        raise ModError('Cannot read mod preferences in '+str(path)+'. Restore or remove this file to reset mod switches.') from error
+
+
+def save_disabled(folder, disabled):
+    folder=Path(folder);target=folder/'.state.json'
+    if folder.is_symlink() or target.is_symlink():
+        raise ModError('The mod folder and preferences must not be symbolic links.')
+    folder.mkdir(exist_ok=True)
+    temporary=None
+    try:
+        with tempfile.NamedTemporaryFile(dir=folder,prefix='.state-',suffix='.tmp',delete=False) as output:
+            temporary=Path(output.name)
+            output.write((json.dumps({'format':1,'disabled':sorted(disabled)},indent=2)+'\n').encode())
+            output.flush();os.fsync(output.fileno())
+        os.replace(temporary,target)
+    finally:
+        if temporary is not None:temporary.unlink(missing_ok=True)
+
+
+def require_enabled(folder, mod_id):
+    if mod_id in disabled_mods(folder):
+        raise ModError('This mod is turned off. Use /mods enable '+mod_id+' or switch it on in /mods.')
+
+
+def set_enabled(folder, mod_id, enabled):
+    target=package_path(folder,mod_id)
+    if not target.is_file():raise ModError('This mod is not installed: '+mod_id)
+    if enabled:load(folder,mod_id)  # Invalid packages can be removed, but cannot be enabled.
+    disabled=disabled_mods(folder)
+    if enabled:disabled.discard(mod_id)
+    else:disabled.add(mod_id)
+    save_disabled(folder,disabled)
+
+
+def uninstall(folder, mod_id):
+    target=package_path(folder,mod_id)
+    if not target.is_file():raise ModError('This mod is not installed: '+mod_id)
+    previous=disabled_mods(folder)
+    if mod_id in previous:save_disabled(folder,previous-{mod_id})
+    try:target.unlink()
+    except OSError:
+        if mod_id in previous:save_disabled(folder,previous)
+        raise
+
+
 def validate(content, mod_id=MOD_ID):
     if mod_id not in REGISTRY:
         try:return community_mods.validate(content,mod_id)
@@ -258,6 +325,7 @@ def installed(folder):
     folder=Path(folder)
     if not folder.is_dir():return valid,errors
     for path in sorted(folder.glob('*.json')):
+        if path.name.startswith('.'):continue
         try:
             data=load(folder,path.stem)
             valid.append(data)
