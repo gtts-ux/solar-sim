@@ -247,14 +247,41 @@ try:
             if not keys:raise AssertionError('Input script ran out before exit')
             return keys.pop(0)
     def probe(screen):
+        from ctypes import wintypes as wt
+        class Character(ctypes.Union):
+            _fields_=[('UnicodeChar',wt.WCHAR),('AsciiChar',ctypes.c_char)]
+        class KeyEvent(ctypes.Structure):
+            _fields_=[('down',wt.BOOL),('repeat',wt.WORD),('virtual',wt.WORD),
+                      ('scan',wt.WORD),('character',Character),('control',wt.DWORD)]
+        class Event(ctypes.Union):
+            _fields_=[('key',KeyEvent),('padding',ctypes.c_byte*16)]
+        class Input(ctypes.Structure):
+            _fields_=[('type',wt.WORD),('event',Event)]
+        kernel.CreateFileW.argtypes=[wt.LPCWSTR,wt.DWORD,wt.DWORD,ctypes.c_void_p,wt.DWORD,wt.DWORD,wt.HANDLE]
+        kernel.CreateFileW.restype=wt.HANDLE
+        handle=kernel.CreateFileW('CONIN$',0xc0000000,3,None,3,0,None)
+        kernel.WriteConsoleInputW.argtypes=[wt.HANDLE,ctypes.POINTER(Input),wt.DWORD,ctypes.POINTER(wt.DWORD)]
+        kernel.CloseHandle.argtypes=[wt.HANDLE]
         screen.keypad(True)
         screen.timeout(1000)
-        for key in (curses.KEY_LEFT,curses.KEY_RIGHT,curses.KEY_UP,curses.KEY_DOWN,'⣿'):
-            curses.flushinp()
-            if isinstance(key,str):curses.unget_wch(key)
-            else:curses.ungetch(key)
-            observed=screen.get_wch()
-            assert observed==key,repr((key,observed,type(observed).__name__))
+        try:
+            # PDCurses ungetch(int) is a Unicode pushback, so inject genuine
+            # Windows console arrow events to test the actual keyboard path.
+            for key,virtual in ((curses.KEY_LEFT,0x25),(curses.KEY_RIGHT,0x27),
+                                (curses.KEY_UP,0x26),(curses.KEY_DOWN,0x28)):
+                curses.flushinp()
+                records=(Input*2)()
+                for index,down in enumerate((True,False)):
+                    records[index].type=1
+                    records[index].event.key=KeyEvent(down,1,virtual,0,Character(),0x100)
+                written=wt.DWORD()
+                assert kernel.WriteConsoleInputW(handle,records,2,ctypes.byref(written)),kernel.GetLastError()
+                observed=screen.get_wch()
+                while observed==curses.KEY_RESIZE:observed=screen.get_wch()
+                assert observed==key,repr((key,observed,type(observed).__name__))
+            curses.flushinp();curses.unget_wch('⣿')
+            assert screen.get_wch()=='⣿'
+        finally:kernel.CloseHandle(handle)
         screen.addstr(2,2,'Earth ⊕ • ⣿');screen.refresh()
         tui(ScriptedScreen(screen),sim)
     curses.wrapper(probe)
