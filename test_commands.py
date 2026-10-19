@@ -195,7 +195,8 @@ class WindowsCommandIntegrationTests(unittest.TestCase):
                                  creationflags=subprocess.CREATE_NEW_CONSOLE)
         try:code=process.wait(timeout=90)
         except subprocess.TimeoutExpired:
-            process.kill();process.wait();self.fail('Windows full-screen console did not exit.')
+            subprocess.run(['taskkill','/f','/t','/pid',str(process.pid)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            process.wait();self.fail('Windows full-screen console did not exit.')
         self.assertTrue(result_path.exists(),'The Windows console probe did not write its result.')
         result=json.loads(result_path.read_text(encoding='utf-8'))
         self.assertEqual(code,0,result)
@@ -223,9 +224,10 @@ try:
     api.CloseHandle.argtypes=[wt.HANDLE]
     api.GetConsoleScreenBufferInfo.argtypes=[wt.HANDLE,ct.POINTER(Info)]
     api.ReadConsoleOutputCharacterW.argtypes=[wt.HANDLE,wt.LPWSTR,wt.DWORD,Coord,ct.POINTER(wt.DWORD)]
+    api.ReadConsoleOutputAttribute.argtypes=[wt.HANDLE,ct.POINTER(wt.WORD),wt.DWORD,Coord,ct.POINTER(wt.DWORD)]
     api.WriteConsoleInputW.argtypes=[wt.HANDLE,ct.POINTER(Input),wt.DWORD,ct.POINTER(wt.DWORD)]
     input_handle=api.CreateFileW('CONIN$',0xc0000000,3,None,3,0,None)
-    def snapshot():
+    def snapshot(with_attributes=False):
         handle=api.CreateFileW('CONOUT$',0xc0000000,3,None,3,0,None)
         try:
             info=Info()
@@ -233,7 +235,12 @@ try:
             width=info.size.X;height=info.window.Bottom-info.window.Top+1
             buffer=ct.create_unicode_buffer(width*height+1);read=wt.DWORD()
             if not api.ReadConsoleOutputCharacterW(handle,buffer,width*height,Coord(0,info.window.Top),ct.byref(read)):return ''
-            return '\n'.join(buffer.value[y*width+info.window.Left:y*width+info.window.Right+1] for y in range(height))
+            text='\n'.join(buffer.value[y*width+info.window.Left:y*width+info.window.Right+1] for y in range(height))
+            if with_attributes:
+                colors=(wt.WORD*(width*height))()
+                assert api.ReadConsoleOutputAttribute(handle,colors,width*height,Coord(0,info.window.Top),ct.byref(read))
+                return text,tuple(colors)
+            return text
         finally:api.CloseHandle(handle)
     def send(text='',virtual=0):
         chars=list(text) if text else ['\0']
@@ -270,8 +277,12 @@ try:
     expect('WELCOME TO YOUR OBSERVATORY');expect('TERMINAL OBSERVATORY')
     send('/setting\r');expect('ARROW NAVIGATION')
     send(virtual=0x28);send('\r');expect('SCREENSAVERS')
-    send(virtual=0x28);send('\r');first=saver()
-    time.sleep(.6);second=saver();assert first!=second,'Earth screensaver did not animate'
+    send(virtual=0x28);send('\r');saver();first=snapshot(True)
+    # A rotating textured globe keeps the same silhouette. Check cell colours
+    # as well as characters so actual changing land/cloud frames are visible.
+    end=time.monotonic()+4
+    while snapshot(True)==first and time.monotonic()<end:time.sleep(.15)
+    assert snapshot(True)!=first,'Earth screensaver did not animate'
     assert json.loads((root/'settings.json').read_text())['screensaver']=='earth'
     send('\r');expect('ARROW NAVIGATION');send(virtual=0x71)
     send('/orbit jupiter\r');expect('ORBIT / JUPITER')
@@ -299,7 +310,7 @@ try:
 except BaseException:
     failure=traceback.format_exc()
     if process is not None:
-        process.kill()
+        subprocess.run(['taskkill','/f','/t','/pid',str(process.pid)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
         try:
             out,err=process.communicate(timeout=5)
             failure+='\nChild output:\n'+out.decode('utf-8','replace')+'\n'+err.decode('utf-8','replace')
