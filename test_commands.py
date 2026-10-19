@@ -170,28 +170,29 @@ class WindowsCommandIntegrationTests(unittest.TestCase):
             if path.is_file() and path.suffix in ('.py','.txt','.json','.bat'):shutil.copy2(path,self.root/path.name)
         shutil.copytree(ROOT/'mod_catalogue',self.root/'mod_catalogue')
 
+    def batch(self,path,*arguments):
+        # CMD /S /C needs an outer pair of quotes around a quoted executable
+        # plus quoted arguments; Python's normal C argv quoting alone is insufficient.
+        command='"'+os.environ.get('COMSPEC','cmd.exe')+'" /d /s /c "'+subprocess.list2cmdline([str(path),*arguments])+'"'
+        return subprocess.run(command,cwd=self.root.parent,capture_output=True,text=True,encoding='utf-8',timeout=30)
+
     def test_real_batch_installer_and_both_commands_forward_current_features(self):
         # Keep CI's real registry unchanged; PATH persistence has a separate isolated test.
         for _ in range(2):
-            result=subprocess.run(['cmd','/d','/c',str(self.root/'Install Solar Sim Commands.bat'),
-                                   '--bin-dir',str(self.bin),'--no-path','--no-runtime'],
-                                  cwd=self.root.parent,capture_output=True,text=True,encoding='utf-8',timeout=30)
+            result=self.batch(self.root/'Install Solar Sim Commands.bat','--bin-dir',str(self.bin),'--no-path','--no-runtime')
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         for name in NAMES:
             wrapper=self.bin/(name+'.cmd')
-            result=subprocess.run(['cmd','/d','/c',str(wrapper),'--offline','-c','/mods','-c','/setting screensaver moon-view','-c','/mission Apollo 11 30 seconds'],
-                                  cwd=self.root.parent,capture_output=True,text=True,encoding='utf-8',timeout=30)
+            result=self.batch(wrapper,'--offline','-c','/mods','-c','/setting screensaver moon-view','-c','/mission Apollo 11 30 seconds')
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)
             self.assertNotIn('Could not run command:',result.stdout)
             self.assertIn('MODS / installed catalogues',result.stdout)
             self.assertIn('Moon view',result.stdout);self.assertIn('APOLLO 11',result.stdout)
-            result=subprocess.run(['cmd','/d','/c',str(wrapper),'--offline','-mproxima centauri'],
-                                  cwd=self.root.parent,capture_output=True,text=True,encoding='utf-8',timeout=30)
+            result=self.batch(wrapper,'--offline','-mproxima centauri')
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)
             self.assertIn('Installed Proxima',result.stdout)
         # A relative authoring destination must use the caller's working directory.
-        result=subprocess.run(['cmd','/d','/c',str(self.bin/'sol-sim.cmd'),'--mod-template','my system.json'],
-                              cwd=self.root.parent,capture_output=True,text=True,encoding='utf-8',timeout=30)
+        result=self.batch(self.bin/'sol-sim.cmd','--mod-template','my system.json')
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         self.assertTrue((self.root.parent/'my system.json').is_file())
 
@@ -247,10 +248,13 @@ try:
             return keys.pop(0)
     def probe(screen):
         screen.keypad(True)
+        screen.timeout(1000)
         for key in (curses.KEY_LEFT,curses.KEY_RIGHT,curses.KEY_UP,curses.KEY_DOWN,'⣿'):
+            curses.flushinp()
             if isinstance(key,str):curses.unget_wch(key)
             else:curses.ungetch(key)
-            assert screen.get_wch()==key
+            observed=screen.get_wch()
+            assert observed==key,repr((key,observed,type(observed).__name__))
         screen.addstr(2,2,'Earth ⊕ • ⣿');screen.refresh()
         tui(ScriptedScreen(screen),sim)
     curses.wrapper(probe)
