@@ -8,12 +8,15 @@ SOLAR SIM - QUICK START
 
    Mac:     Double-click Start Solar Sim.command
    Linux:   Open a terminal here: sh "Start Solar Sim.sh"
-   Windows: Double-click Start Solar Sim.bat (text mode)
+   Windows: Double-click Start Solar Sim.bat (animated interface)
 
 If the Mac launcher will not open, open a terminal here and type:
    sh "Start Solar Sim.command"
 
-Use macOS or Linux for the full-screen animated interface.
+Windows: first animated launch installs windows-curses into a private
+venv/ folder. Internet is needed once; no administrator access is needed.
+Use standard Python 3.10-3.14 for the available Windows animation wheels.
+Use Start Solar Sim.bat --plain for text mode without this download.
 Make the terminal at least 64 columns by 22 rows.
 
 Optional short commands (macOS/Linux):
@@ -21,6 +24,13 @@ Optional short commands (macOS/Linux):
    Open a new terminal window, then type solar-sim or sol-sim.
    Both names work from any directory. No sudo is needed.
    Keep this folder in place; reinstall the commands if you move it.
+
+Windows short commands:
+   Double-click Install Solar Sim Commands.bat in the extracted folder.
+   Or run: py -3 install_commands.py
+   It sets up animations and adds sol-sim / solar-sim to your user PATH.
+   Close all terminal windows and open a new terminal afterward.
+   --no-runtime skips the download; --no-path keeps PATH unchanged.
 
 Getting started from Terminal:
    sol-sim                 Open the app

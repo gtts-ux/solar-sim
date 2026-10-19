@@ -12,7 +12,7 @@ Download **solar-sim.zip** from this repository's **Releases** page, then extrac
 | --- | --- | --- |
 | macOS | Double-click `Start Solar Sim.command` | Full-screen animated terminal |
 | Linux | Open a terminal in the folder and run `sh "Start Solar Sim.sh"` | Full-screen animated terminal when Python includes curses |
-| Windows | Double-click `Start Solar Sim.bat` | Scrolling text commands and mission snapshots |
+| Windows | Double-click `Start Solar Sim.bat` | Full-screen interface, arrows and animated screensavers; first setup downloads windows-curses |
 
 On macOS, if Finder will not launch the file, open Terminal in the extracted folder and run:
 
@@ -26,7 +26,7 @@ You can always run the Python entry point directly:
 python3 solar_sim.py
 ```
 
-On Windows use `py -3 solar_sim.py --plain` or the included `.bat` launcher. Native Windows full-screen animation is not included; use macOS/Linux for the animated interface. No downloads or package installs happen in the launchers.
+On Windows use `Start Solar Sim.bat` for the current animated app, including settings, Mods management, missions and screensavers. First animated launch downloads [windows-curses](https://pypi.org/project/windows-curses/) into a private environment under `venv/`; it needs internet once, with no administrator access or changes to your global Python. Use standard Python 3.10–3.14 for the available Windows wheels. `--plain` remains available without the dependency. Updates, tutorials, mod installation and scripted commands do not require the animation dependency. Mac/Linux launchers keep their existing behavior.
 
 Use a terminal at least **64 columns × 22 rows**; about 120 × 40 is more comfortable. Run `python3 solar_sim.py --offline` to disable automatic JPL requests, or add `--plain` for text mode.
 
@@ -40,7 +40,7 @@ python3 install_commands.py
 
 Open a **new terminal window**, then type either `solar-sim` or `sol-sim` from any directory. Both launch the same app; options such as `solar-sim --offline` and `sol-sim --plain` work too.
 
-The installer creates user commands in `~/.local/bin` and adds that directory to zsh, bash or sh startup files. It needs no administrator access or extra packages. Existing shell settings are preserved. Keep the app folder in place; rerun the installer from its new location after moving it. `--bin-dir PATH --no-path` lets you manage the command directory and PATH yourself. Windows retains the `.bat` launcher.
+The installer creates user commands in `~/.local/bin` and adds that directory to zsh, bash or sh startup files. It needs no administrator access or extra packages. Existing shell settings are preserved. Keep the app folder in place; rerun the installer from its new location after moving it. `--bin-dir PATH --no-path` lets you manage the command directory and PATH yourself. On Windows, double-click **Install Solar Sim Commands.bat** or run `py -3 install_commands.py`. It installs `solar-sim.cmd` and `sol-sim.cmd` under `%LOCALAPPDATA%\SolarSim\bin`, appends this folder to your user PATH, and prepares animated mode. Close all terminal windows and open a new one. `--no-path` leaves PATH alone; `--no-runtime` installs commands without downloading the optional animation dependency. Existing user PATH entries and unrelated command files are preserved. Keep the extracted app folder in place, and rerun the installer if you move it.
 
 ## Tutorial and updates
 
@@ -153,7 +153,7 @@ Included flights: Apollo 8, 11, 13 and 17; Artemis I and II; SpaceX Demo-2 and C
 
 The app can retrieve current planetary and moon state vectors from NASA/JPL Horizons, with labeled offline fallbacks. It includes selected major moons and spacecraft rather than every satellite. Artificial-satellite positions and mission replay routes are illustrative, not live tracking. Historical replay milestones are rounded, some transitions are approximate, and time compression varies by stage. Solar days are approximate means rather than local daylight duration.
 
-Internet access is optional. Cache and exported snapshots are stored inside the extracted folder, so keep it somewhere you can write to. Python 3.10+ and its standard library are the only runtime requirements. Full-screen mode uses curses, normally included with macOS/Linux Python.
+Internet access is optional. Cache and exported snapshots are stored inside the extracted folder, so keep it somewhere you can write to. Python 3.10+ and its standard library run the simulator and text interface. Full-screen mode uses curses, normally included with macOS/Linux Python; the Windows setup adds windows-curses to a private environment.
 
 Local `settings.json` and `launch_cache.json` files are ignored by Git and omitted from downloads.
 

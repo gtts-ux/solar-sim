@@ -878,3 +878,27 @@ App updates preserve them. Updating an installed mod keeps its switch
 state; reinstalling after uninstall starts ON. Only one catalogue is
 viewed at a time; ON means available, not combined with other systems.
 Install/reinstall in Terminal: sol-sim -m "proxima centauri"
+
+WINDOWS LAUNCHER AND COMMANDS / v1.11.1
+=====================================
+
+Windows now opens the current animated interface through Start Solar Sim.bat,
+with arrows, settings, Mods controls, mission replays and screensavers.
+First animated launch sets up windows-curses in a private venv/ folder.
+Internet is needed once; no administrator rights or global pip install.
+Use standard Python 3.10-3.14. If setup fails, text mode remains usable;
+retry the installer online or use Start Solar Sim.bat --plain.
+
+Double-click Install Solar Sim Commands.bat, or run:
+    py -3 install_commands.py
+
+Close all terminal windows and open a new one, then type sol-sim or solar-sim.
+The commands go in %LOCALAPPDATA%\SolarSim\bin and only the current user's
+PATH is updated. --bin-dir chooses another folder; --no-path skips PATH
+setup; --no-runtime skips the optional animation download.
+
+Both command names forward options, including sol-sim -u, sol-sim -m
+"username/repository", --mod-template, --check-mod and --tutorial. Relative
+file paths use the folder you ran the command from. Updates and other
+noninteractive commands skip animation setup. No forced --plain argument
+is added for normal interactive use. macOS launchers and behavior are unchanged.
