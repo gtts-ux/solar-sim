@@ -11,59 +11,35 @@ NAMES=('solar-sim','sol-sim')
 MARKER='# Installed by Solar Sim terminal command installer.'
 WINDOWS=sys.platform=='win32'
 WINDOWS_MARKER='rem Installed by Solar Sim Windows command installer.'
-WINDOWS_CURSES='windows-curses==2.4.2'
-
-
-def windows_runtime_path(root):
-    tag=f'windows-py{sys.version_info.major}.{sys.version_info.minor}-{64 if sys.maxsize>2**32 else 32}'
-    return Path(root)/'venv'/tag/'Scripts'/'python.exe'
-
-
-def has_windows_curses(python):
-    import subprocess
-    try:
-        return subprocess.run([str(python),'-B','-c','import curses; assert hasattr(curses, "get_wch") or hasattr(curses.window, "get_wch")'],
-                              stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=15).returncode==0
-    except (OSError,subprocess.TimeoutExpired):return False
 
 
 def prepare_windows_runtime(root,allow_download=True):
-    """Keep the optional Windows UI dependency out of the user's global Python."""
-    import subprocess
-    if has_windows_curses(sys.executable):return Path(sys.executable)
-    python=windows_runtime_path(root)
-    if python.is_file() and has_windows_curses(python):return python
-    if not allow_download:
-        raise RuntimeError('Full-screen Windows support is not installed. Run Install Solar Sim Commands.bat once with internet, or use --plain.')
-    print('Setting up Windows animations and arrow controls (one-time download from PyPI)...',flush=True)
-    environment=python.parent.parent
-    subprocess.run([sys.executable,'-m','venv',str(environment)],check=True)
-    subprocess.run([str(python),'-m','pip','install','--disable-pip-version-check',
-                    '--only-binary=:all:',WINDOWS_CURSES],check=True)
-    if not has_windows_curses(python):raise RuntimeError('Windows full-screen support could not start. Try standard Python 3.10-3.14, or --plain.')
-    return python
+    """Validate the bundled Windows console backend; no pip or wheel required."""
+    if not (Path(root)/'windows_console.py').is_file():
+        raise RuntimeError('The Windows interface file is missing. Extract the entire current Solar Sim ZIP and reinstall commands from that folder.')
+    return Path(sys.executable)
 
 
 def windows_launch(root,arguments):
-    """Windows .bat entry point. Maintenance commands never need curses or pip."""
+    """Maintenance uses the ordinary CLI; interactive launch uses native Windows UI."""
     import subprocess
     root=Path(root);arguments=list(arguments)
-    terminal=bool(sys.stdin and sys.stdout and sys.stdin.isatty() and sys.stdout.isatty())
     actions=('--plain','--help','-h','--version','--tutorial','--mod-tutorial','--update','-u',
              '--mod','-m','--mod-template','--check-mod','--command','-c')
     maintenance=any(arg in actions or arg.startswith(('--command=','--mod=','--mod-template=','--check-mod='))
                     or (arg.startswith(('-c','-m')) and not arg.startswith('--')) for arg in arguments)
-    python=Path(sys.executable)
-    if terminal and not maintenance:
-        try:python=prepare_windows_runtime(root,allow_download='--offline' not in arguments)
-        except (OSError,RuntimeError,subprocess.SubprocessError) as error:
-            print('Windows animated interface setup failed: '+str(error),file=sys.stderr)
-            print('Starting text mode. Re-run Install Solar Sim Commands.bat to repair the animated interface.',file=sys.stderr)
-            arguments.append('--plain')
     environment=os.environ.copy()
-    environment.setdefault('TERM','xterm-256color')
+    environment['TERM']='xterm-256color'
     environment['PYTHONUTF8']='1';environment['PYTHONIOENCODING']='utf-8'
-    return subprocess.call([str(python),'-B',str(root/'solar_sim.py'),*arguments],env=environment)
+    if maintenance:
+        command=[sys.executable,'-B',str(root/'solar_sim.py'),*arguments]
+    else:
+        try:prepare_windows_runtime(root)
+        except RuntimeError as failure:
+            print(str(failure),file=sys.stderr)
+            return 1
+        command=[sys.executable,'-B',str(root/'install_commands.py'),'--run-windows-ui',*arguments]
+    return subprocess.call(command,env=environment)
 
 
 def windows_wrapper(root):
@@ -123,18 +99,19 @@ def install_windows(root,bin_dir,*,add_path=True,setup_runtime=True):
 
 def windows_main(argv):
     import subprocess
-    parser=argparse.ArgumentParser(description='Install Windows commands and full-screen Solar Sim support; no administrator needed.')
+    parser=argparse.ArgumentParser(description='Install Windows commands and the bundled full-screen interface; no administrator needed.')
     default=Path(os.environ.get('LOCALAPPDATA') or Path.home()/'AppData'/'Local')/'SolarSim'/'bin'
     parser.add_argument('--bin-dir',type=Path,default=default,help='Folder for solar-sim.cmd and sol-sim.cmd.')
     parser.add_argument('--no-path',action='store_true',help='Leave the Windows user PATH unchanged.')
-    parser.add_argument('--no-runtime',action='store_true',help='Install commands only; skip the optional windows-curses download.')
+    parser.add_argument('--no-runtime',action='store_true',help='Install commands only; skip checking bundled Windows interface files.')
     args=parser.parse_args(argv)
     try:paths=install_windows(ROOT,args.bin_dir,add_path=not args.no_path,setup_runtime=not args.no_runtime)
     except (OSError,ValueError,RuntimeError,subprocess.SubprocessError) as error:
         print('Could not finish Windows setup: '+str(error),file=sys.stderr)
-        print('You can still run Start Solar Sim.bat --plain. Re-run the installer to retry full-screen setup.',file=sys.stderr)
+        print('Extract the entire latest ZIP and retry. Start Solar Sim.bat --plain remains available.',file=sys.stderr)
         return 1
     print('Installed: '+', '.join(NAMES))
+    print('Windows full-screen interface: bundled / no extra download required')
     print('App folder: '+str(ROOT))
     print('Command folder: '+str(paths[0].parent))
     print('Add the command folder to PATH yourself.' if args.no_path else 'Close all terminal windows and open a new terminal, then type sol-sim or solar-sim.')
@@ -209,6 +186,9 @@ def main(argv=None):
     argv=list(sys.argv[1:] if argv is None else argv)
     if WINDOWS:
         if argv[:1]==['--launch-windows']:return windows_launch(ROOT,argv[1:])
+        if argv[:1]==['--run-windows-ui']:
+            from windows_console import run
+            return run(ROOT,argv[1:])
         return windows_main(argv)
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--bin-dir',type=Path,default=Path.home()/'.local/bin',help='Command folder (default: ~/.local/bin).')

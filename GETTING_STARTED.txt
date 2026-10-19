@@ -24,10 +24,9 @@ GET STARTED WITH SOL-SIM
    Windows: double-click Install Solar Sim Commands.bat, or run
    py -3 install_commands.py. Close all terminals and open a new one,
    then use sol-sim or solar-sim. Start Solar Sim.bat also launches
-   the animated interface directly. First setup downloads windows-curses
-   into a private venv/ folder (Python 3.10-3.14, no administrator needed).
-   Use --plain for text mode, or --no-runtime on the installer to skip
-   the optional dependency download.
+   the animated interface directly. Windows 10/11 uses the bundled native
+   console backend (Python 3.10+, including 3.15). No extra package or
+   animation download is required. Use --plain only for scrolling text mode.
 
 2. EXPLORE A PLANET
 

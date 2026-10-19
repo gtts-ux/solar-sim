@@ -9,7 +9,7 @@ if not errorlevel 1 goto install_py
 python -c "import sys; sys.exit(sys.version_info < (3, 10))" >nul 2>&1
 if not errorlevel 1 goto install_python
 echo Solar Sim requires Python 3.10 or newer.
-echo Install Python 3.10-3.14 from https://www.python.org/downloads/ with Python on PATH.
+echo Install Python 3.10 or newer from https://www.python.org/downloads/ with Python on PATH.
 if "%~1"=="" pause
 exit /b 1
 

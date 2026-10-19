@@ -879,26 +879,31 @@ state; reinstalling after uninstall starts ON. Only one catalogue is
 viewed at a time; ON means available, not combined with other systems.
 Install/reinstall in Terminal: sol-sim -m "proxima centauri"
 
-WINDOWS LAUNCHER AND COMMANDS / v1.11.1
-=====================================
+WINDOWS INTERFACE PARITY / v1.11.2
+==================================
 
-Windows now opens the current animated interface through Start Solar Sim.bat,
-with arrows, settings, Mods controls, mission replays and screensavers.
-First animated launch sets up windows-curses in a private venv/ folder.
-Internet is needed once; no administrator rights or global pip install.
-Use standard Python 3.10-3.14. If setup fails, text mode remains usable;
-retry the installer online or use Start Solar Sim.bat --plain.
+Windows 10/11 now runs the same terminal UI, arrows, orbit cameras, settings,
+Mods manager, mission replays and all screensavers as macOS. A bundled native
+console backend replaces the optional windows-curses environment. Python
+3.10+ (including 3.15) works without pip, wheels or an animation download.
+The simulator and animation source remain shared with macOS; its launchers
+and interface behavior are unchanged.
 
-Double-click Install Solar Sim Commands.bat, or run:
-    py -3 install_commands.py
+Extract the entire new ZIP, then double-click Install Solar Sim Commands.bat
+from that folder. Reopen your terminal and run sol-sim or solar-sim.
+Start Solar Sim.bat launches the same full interface directly. Keep the
+whole app folder together, including windows_console.py. Existing settings
+and installed mods stay in that app copy when using sol-sim -u.
 
-Close all terminal windows and open a new one, then type sol-sim or solar-sim.
-The commands go in %LOCALAPPDATA%\SolarSim\bin and only the current user's
-PATH is updated. --bin-dir chooses another folder; --no-path skips PATH
-setup; --no-runtime skips the optional animation download.
+Arrows browse menus on empty input; /setting and /mods give immediate menu
+focus. Left/Right zoom only in orbit mode. Enter on empty input opens the
+selected animated screensaver; Enter returns. All screensaver selections
+use the same scenes as macOS, including Moon view, Earth and Jupiter moons.
 
-Both command names forward options, including sol-sim -u, sol-sim -m
-"username/repository", --mod-template, --check-mod and --tutorial. Relative
-file paths use the folder you ran the command from. Updates and other
-noninteractive commands skip animation setup. No forced --plain argument
-is added for normal interactive use. macOS launchers and behavior are unchanged.
+--plain explicitly chooses scrolling text mode. A missing native console
+now reports an error instead of silently opening the old scrolling prompt.
+Update, mod install, tutorial and -c commands keep working without a UI.
+
+Commands install in %LOCALAPPDATA%\SolarSim\bin; only the current user's
+PATH changes. --bin-dir chooses another folder; --no-path skips PATH setup.
+Relative mod file paths use the folder you ran the command from.
