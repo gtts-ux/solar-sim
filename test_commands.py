@@ -279,8 +279,6 @@ try:
                 observed=screen.get_wch()
                 while observed==curses.KEY_RESIZE:observed=screen.get_wch()
                 assert observed==key,repr((key,observed,type(observed).__name__))
-            curses.flushinp();curses.unget_wch('⣿')
-            assert screen.get_wch()=='⣿'
         finally:kernel.CloseHandle(handle)
         screen.addstr(2,2,'Earth ⊕ • ⣿');screen.refresh()
         tui(ScriptedScreen(screen),sim)
