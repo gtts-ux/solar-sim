@@ -446,18 +446,19 @@ def tui(screen, sim, no_color=False):
             write(h-3,2,"›",6,True)
             available = w-8
             start = max(0,cursor-available+1)
-            if navigation.opened:
+            if navigation.opened and not navigation.editor:
                 write(h-3,4,'Browse with arrows; Enter selects.',8)
             elif not command:
-                write(h-3,4,"Type a slash command…",8)
+                write(h-3,4,"Type a value…" if navigation.editor else "Type a slash command…",8)
             else:
-                write(h-3,4,command[start:start+available])
-            write(h-2,2,'←/→ section  ↑/↓ item  Enter open  Esc back  F2 close' if navigation.opened else
+                write(h-3,4,command[start:start+available],highlight=bool(navigation.editor and navigation.editor.selected))
+            write(h-2,2,'Edit '+navigation.editor.label+'  Enter save  Esc cancel  Ctrl+U clear' if navigation.editor else
+                  '←/→ section  ↑/↓ item  Enter open  Esc back  F2 close' if navigation.opened else
                   f'←/→ orbit camera:{sim.camera.name}  ↑/↓ browse  Ctrl+P/N history' if sim.screen=='orbit' and not sim.overlay else
                   'Arrows browse  Tab/F2 menu  Ctrl+P/N history  Enter empty:saver',8)
             try:
-                curses.curs_set(0 if navigation.opened else 1)
-                if not navigation.opened:
+                curses.curs_set(0 if navigation.opened and not navigation.editor else 1)
+                if not navigation.opened or navigation.editor:
                     screen.move(h-3,4+cursor-start)
             except curses.error:
                 pass
@@ -469,6 +470,8 @@ def tui(screen, sim, no_color=False):
             continue
         if key in ("\x03","\x04"):
             sim.running = False
+        elif navigation.editor:
+            command,cursor=navigation.edit_key(key,command,cursor,sim,curses)
         elif key == curses.KEY_F2 or (key=='\t' and not command.strip() and not navigation.opened):
             navigation.toggle()
             if not navigation.opened and sim.overlay=='settings':sim.overlay=None
@@ -495,6 +498,9 @@ def tui(screen, sim, no_color=False):
                 navigation.move(-10000 if key==curses.KEY_HOME else 10000,sim)
             elif key in ('\n','\r',curses.KEY_ENTER):
                 item=navigation.activate(sim)
+                if navigation.editor:
+                    command=navigation.editor.value
+                    cursor=len(command)
                 if item:
                     if item.screensaver:
                         show_screensaver(screen,sim,colors)
@@ -542,6 +548,9 @@ def tui(screen, sim, no_color=False):
                     words=command.strip().lower().lstrip('/').split()
                     if words and words[0]=='mods' and not response.startswith(('Could not run command:','File operation failed:')):
                         navigation.open_mods(sim)
+                    if words and words[0]=='builder' and not response.startswith(('Could not run command:','File operation failed:')):
+                        navigation.open_builder(sim)
+                        if len(words)>1:navigation.feedback=feedback.replace(str(sim.builder.root),'')
                     if words and (words[0] in ('setting','settings') or settings_input) and words[-1]!='exit' and not response.startswith(('Could not run command:','File operation failed:')):
                         sim.overlay='settings'
                         group=None

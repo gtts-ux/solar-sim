@@ -365,7 +365,7 @@ COMMANDS = ["mission", "missions", "day", "satellites", "satellite", "dwarf", "m
             "now", "reset", "scale", "labels", "trails", "export", "info", "sources", "help", "clear", "quit", "exit"]
 
 
-COMMANDS = ['mod','mods','body','interstellar','proxima','tutorial','menu','setting','settings','camera','live'] + COMMANDS
+COMMANDS = ['builder','mod','mods','body','interstellar','proxima','tutorial','menu','setting','settings','camera','live'] + COMMANDS
 
 
 class SolarSimulation:

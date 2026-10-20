@@ -201,3 +201,19 @@ MANAGE INSTALLED MODS
    Turning off or removing the viewed system returns to the Solar System.
    You can also type /mods enable ID, /mods disable ID, or
    /mods uninstall ID, using the IDs listed by /mods.
+
+IN-APP MOD MAKER / v1.12.0
+
+   Type /builder, or open /mods and select Create a mod. Choose New mod...,
+   Add star, then Add planet. Each planet's form has Add moon. Use arrows
+   and Enter to edit names, physical values, orbits, atmosphere and notes.
+   Typing replaces the selected field value; Ctrl+U clears; Esc cancels.
+   Mod details edits the ID, version, description and source links.
+
+   Drafts save automatically. Validate draft checks the public mod schema.
+   Export project folder creates mod-projects/ID/ inside the app, including
+   solar-mod.json, README files and PUBLISH.txt. Upload that folder's
+   contents to your own repository later. No files are uploaded by the app.
+   Use Open saved project to resume an export or earlier draft.
+
+   The terminal JSON template and /mod tutorial workflow remain available.

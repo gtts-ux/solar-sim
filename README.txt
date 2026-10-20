@@ -907,3 +907,36 @@ Update, mod install, tutorial and -c commands keep working without a UI.
 Commands install in %LOCALAPPDATA%\SolarSim\bin; only the current user's
 PATH changes. --bin-dir chooses another folder; --no-path skips PATH setup.
 Relative mod file paths use the folder you ran the command from.
+
+IN-APP MOD MAKER / v1.12.0
+=========================
+
+Type /builder or select Create a mod under Mods. Enter a mod name, add
+a central star, then planets. Each planet form has Add moon, linking it
+to that parent. Forms edit names, mass (kg), radius (km), rotation/day
+(hours), orbit radius (km), period (Earth days), eccentricity, inclination,
+phase, temperature, composition, atmosphere, aliases, colour and notes.
+
+Up/Down selects a field, Enter edits. Typing replaces the selected value;
+Left/Right moves the editing cursor, Ctrl+U clears, Enter saves, Esc cancels.
+Use Mod details for the ID, description, version, sources and real/fictional
+status. Project notes appear in the README; Body notes appear in profiles.
+
+Drafts auto-save in mod-projects/draft.json inside this app. New mod and
+Open saved project back up previous drafts. Open saved project also resumes
+exported projects. Validate draft checks the same schema as the installer.
+Export project folder creates mod-projects/ID/ containing solar-mod.json,
+README.md, README.txt, PUBLISH.txt and builder-draft.json. Repeated exports
+create ID-2, ID-3, etc.; earlier copies stay intact. Drafts/projects survive
+app updates. Nothing is published automatically.
+
+Review your mod and upload that folder's contents to your own public GitHub
+repository, with solar-mod.json at its root. People then install it using
+sol-sim -m "YOUR-NAME/YOUR-REPOSITORY". PUBLISH.txt has the local testing steps.
+Starter values are illustrative estimates, and new systems start fictional.
+Real catalogues require HTTPS sources before export. One central star is
+supported by the current format; planets and moons use Keplerian ellipses.
+
+The original sol-sim --mod-template, --check-mod, JSON editor, and /mod
+tutorial workflow is still available. /builder also has slash commands
+for text mode: new, add star/planet/moon, set, delete, validate, export, load.

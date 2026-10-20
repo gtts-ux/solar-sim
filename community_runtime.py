@@ -15,7 +15,15 @@ from updater import version
 class CommunitySupport:
     def __init__(self,*args,**kwargs):
         self._installed_cache=None
+        self._builder=None
         super().__init__(*args,**kwargs)
+
+    @property
+    def builder(self):
+        if self._builder is None:
+            from mod_builder import ModBuilder
+            self._builder=ModBuilder(self.mods_path.parent)
+        return self._builder
 
     @property
     def community_mode(self):
@@ -133,7 +141,7 @@ class CommunitySupport:
                                     '/mod ID opens a catalogue; /mod exit returns.\n'
                                     '/mods enable ID | /mods disable ID | /mods uninstall ID\n'
                                     'On permits opening a system; Off keeps its installed files. Uninstall removes its installed package.\n'
-                                    '/mod tutorial or sol-sim --mod-tutorial explains creation and sharing.')
+                                    '/builder opens the in-app mod maker. /mod tutorial keeps the JSON creation guide.')
 
     def activate_mod(self,mod_id):
         require_enabled(self.mods_path,mod_id)
@@ -152,6 +160,9 @@ class CommunitySupport:
     def _command(self,raw):
         parts=shlex.split(raw.strip().lstrip('/'))
         cmd=parts[0].lower() if parts else '';args=parts[1:]
+        if cmd=='builder':
+            self.overlay=None
+            return self.builder.command(args)
         if cmd=='mods':
             if args and args!=['list']:
                 if len(args)!=2 or args[0].lower() not in ('enable','disable','uninstall'):
@@ -185,7 +196,7 @@ class CommunitySupport:
             self.overlay=None
             return self.open_body(self.body(' '.join(args)))
         if cmd=='help':
-            return super()._command(raw)+'\n\nCOMMUNITY MODS\n  /mods manages installed catalogues; /mod ID opens one; /mod exit returns.\n  /mods enable ID /mods disable ID /mods uninstall ID\n  /body NAME opens any object. /mod tutorial is the creation guide.\n  Terminal: sol-sim --mod-template solar-mod.json; sol-sim --check-mod solar-mod.json\n  Install: sol-sim -m "username/repository" or -m "./solar-mod.json"'
+            return super()._command(raw)+'\n\nCOMMUNITY MODS\n  /mods manages installed catalogues; /mod ID opens one; /mod exit returns.\n  /mods enable ID /mods disable ID /mods uninstall ID\n  /builder opens the in-app mod maker.\n  /body NAME opens any object. /mod tutorial is the creation guide.\n  Terminal: sol-sim --mod-template solar-mod.json; sol-sim --check-mod solar-mod.json\n  Install: sol-sim -m "username/repository" or -m "./solar-mod.json"'
         if not self.community_mode:return super()._command(raw)
         # A catalogue cannot take over the simulator's command names.
         from engine import COMMANDS

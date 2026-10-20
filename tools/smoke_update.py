@@ -60,10 +60,20 @@ def main():
         assert json.loads(community)['format']==2
         assert 'turned off' in app_command('--offline','-c','/mods disable aurora-system')
         mod_state=(root/'mods/.state.json').read_bytes()
+        assert 'Mod project exported:' in app_command('--offline','-c','/builder new "Publish demo"',
+            '-c','/builder add star Helios','-c','/builder add planet Nova',
+            '-c','/builder add moon Pebble Nova','-c','/builder set body 2 notes "An ocean world."',
+            '-c','/builder export')
+        author=root/'mod-projects/publish-demo'
+        draft=(root/'mod-projects/draft.json').read_bytes()
+        authored=(author/'solar-mod.json').read_bytes()
         # Exercise a real upgrade while switches and all installed packages exist.
         (root/'VERSION.txt').write_text('0.0.0\n')
         assert run_update(root,fetch=published) is not None
         assert (root/'mods/.state.json').read_bytes()==mod_state
+        assert (root/'mod-projects/draft.json').read_bytes()==draft
+        assert (author/'solar-mod.json').read_bytes()==authored
+        assert (author/'PUBLISH.txt').is_file()
         assert run_update(root,fetch=published) is None
         assert (root/'mods/proxima-centauri.json').read_bytes()==installed
         assert (root/'mods/interstellar.json').read_bytes()==film
@@ -76,7 +86,9 @@ def main():
         assert not (root/'mods/aurora-system.json').exists()
         assert (root/'mods/proxima-centauri.json').read_bytes()==installed
         assert (root/'mods/interstellar.json').read_bytes()==film
-    print('Published ZIP/checksum downloaded successfully; upgrade, saved settings and mod switches, curated mods, community creation/validation/local and public GitHub installation, moon orbits/comparison, mod enable/disable/uninstall and repeat check passed.')
+        assert 'Installed Publish demo' in app_command('--offline','-m',str(author/'solar-mod.json'))
+        assert 'Pebble' in app_command('--offline','-c','/mod publish-demo','-c','/moons Nova')
+    print('Published ZIP/checksum downloaded successfully; upgrade, saved settings and mod switches, curated mods, community creation/validation/local and public GitHub installation, moon orbits/comparison, mod enable/disable/uninstall, in-app builder export/installation and preserved author projects passed.')
 
 
 if __name__=='__main__':main()

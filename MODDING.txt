@@ -4,10 +4,67 @@ For Solar Sim v1.10.0 or newer. No Python coding, Git, account or pip package is
 needed to make and test a mod. A public GitHub repository is one easy way
 to share it. Mods are JSON data catalogues; the app never runs mod code.
 
-Examples use the macOS/Linux sol-sim command. On Windows, replace sol-sim
-with py -3 "C:\path\to\solar-sim\solar_sim.py" (use your actual app path).
-The Python runtime is still required, as for the base app. Use --plain
-when opening the app on native Windows; slash commands work in text mode.
+The sol-sim / solar-sim commands work on macOS, Linux and Windows after
+running the command installer. Windows 10/11 includes the native full-screen
+interface; --plain is optional for scrolling slash commands.
+
+IN-APP MOD MAKER (v1.12.0+)
+
+   Open /mods, select Create a mod, and press Enter. /builder opens the same
+   menu directly. No JSON editing is required.
+
+   1. Choose New mod... and enter its name. A draft is saved automatically.
+   2. Choose Add star. Enter a name, then edit mass, radius, rotation,
+      temperature, composition, atmosphere and Body notes in its form.
+      Escape returns to the builder overview.
+   3. Choose Add planet (or Add dwarf planet). Edit its size, mass, day,
+      orbit radius/period, eccentricity, inclination, phase and other fields.
+   4. Inside a planet's form, choose Add moon. It is linked to that planet;
+      edit the moon's own properties and notes. Rename a parent safely:
+      its children's parent references update automatically.
+   5. Use Mod details for the display name, unique ID, description, version,
+      real/fictional status and HTTPS sources (semicolon-separated).
+      Project notes go into the README; type \n for a paragraph break.
+   6. Choose Validate draft, then Export project folder.
+
+   Up/Down chooses fields; Enter edits. The current value starts selected,
+   so typing replaces it. Left/Right edits the cursor within the field;
+   Ctrl+U clears it, Enter saves, and Esc cancels the current edit.
+
+   Projects are created inside this app's mod-projects/ID/ folder, with:
+       solar-mod.json       Standard format-2 mod, ready for the installer
+       README.md / .txt     System overview, objects, notes and install guide
+       PUBLISH.txt          GitHub publication and sharing steps
+       builder-draft.json   Reopen the project in the in-app maker
+
+   Repeated exports create new folders (ID-2, ID-3, ...), keeping old copies.
+   The active draft is mod-projects/draft.json. New mod and Open saved
+   project back up previous drafts; use Open saved project to resume them.
+   Drafts and projects survive sol-sim -u and are excluded from app releases.
+
+   Starter values are illustrative, marked as estimates; new systems start
+   fictional. Edit those values for your design. Real systems need HTTPS
+   sources before export. The current format supports one central star
+   and up to 63 orbiting planets/dwarfs/moons, not binary-star dynamics.
+   Moons can orbit planets, dwarfs or other moons. Deleting a body removes
+   its descendants from the draft only. Exports remain unchanged.
+
+   Nothing is uploaded automatically. Review the project, then upload its
+   CONTENTS to your own public repository, keeping solar-mod.json at root.
+   Users can install with: sol-sim -m "YOUR-NAME/YOUR-REPOSITORY"
+
+   The same actions also work with slash commands, including --plain:
+       /builder new "My system"
+       /builder add star "Helios"
+       /builder add planet "Nova"
+       /builder add moon "Pebble" "Nova"
+       /builder set body 2 radius 7000
+       /builder set body 2 notes "An ocean world."
+       /builder set project notes "My project notes."
+       /builder validate
+       /builder export
+
+   Keep using the original template/editor workflow below if you prefer.
 
 1. MAKE YOUR FIRST MOD
 

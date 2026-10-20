@@ -62,3 +62,8 @@ Left/Right changes camera only in orbit view; Ctrl+P/N recalls command history.
 Use /camera directly during missions. Left/Right or Ctrl+B/F edits typed input.
 Use /camera system to restore automatic framing.
 Read README.md for setup and README.txt for the full command guide.
+
+Create a system in the app: /builder (also Mods > Create a mod).
+Add a star, planets and moons, edit their details/notes, then export a
+mod-projects/ID/ folder with JSON, README files and publishing steps.
+The existing JSON template workflow remains in /mod tutorial.

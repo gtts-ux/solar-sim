@@ -21,6 +21,9 @@ class Item:
     live_id: str = ''
     catalogue: str = ''
     mod_id: str = ''
+    builder: str = ''
+    edit: tuple = ()
+    value: str = ''
 
 
 @dataclass
@@ -29,6 +32,15 @@ class Page:
     items: tuple
     index: int = 0
     mod_id: str = ''
+    builder: str = ''
+
+
+@dataclass
+class Editor:
+    label: str
+    action: tuple
+    value: str
+    selected: bool = True
 
 
 def body_item(body,catalogue=None):
@@ -58,8 +70,10 @@ class Navigation:
         self.indices = [0]*len(self.sections)
         self.pages = []
         self.feedback = ''
+        self.editor=None
 
     def toggle(self):
+        self.editor=None
         self.opened = not self.opened
         self.feedback = ''
 
@@ -78,6 +92,50 @@ class Navigation:
         self.change_section(self.sections.index('Mods')-self.section)
         self.opened=True
         self.index=0
+
+    def open_builder(self,sim):
+        self.open_mods(sim)
+        self.pages.append(Page('Mod maker',(),builder='home'))
+
+    def submit_editor(self,value,sim):
+        from builder_ui import submit
+        editor=self.editor
+        try:response,index=submit(sim.builder,editor.action,value)
+        except (ValueError,OSError) as failure:
+            self.feedback=str(failure)
+            return False
+        self.editor=None
+        if editor.action[0]=='new':self.open_builder(sim)
+        if index is not None:
+            self.pages.append(Page(sim.builder.body(index)['name'],(),builder='body:'+str(index)))
+        self.feedback=response
+        return True
+
+    def edit_key(self,key,value,cursor,sim,keys):
+        """Inline form input: editing arrows never browse menus or change cameras."""
+        editor=self.editor
+        if key in ('\x1b',keys.KEY_F2):
+            self.editor=None;self.feedback='Edit cancelled.'
+            return '',0
+        if key in ('\r','\n',keys.KEY_ENTER):
+            if self.submit_editor(value,sim):return '',0
+            return value,cursor
+        if key in ('\x15',):editor.selected=False;return '',0
+        if key in (keys.KEY_LEFT,keys.KEY_RIGHT,keys.KEY_HOME,keys.KEY_END,'\x01','\x05'):
+            if key==keys.KEY_LEFT:cursor=max(0,cursor-1)
+            elif key==keys.KEY_RIGHT:cursor=min(len(value),cursor+1)
+            elif key in (keys.KEY_HOME,'\x01'):cursor=0
+            else:cursor=len(value)
+            editor.selected=False
+        elif key in (keys.KEY_BACKSPACE,'\x7f','\b',keys.KEY_DC):
+            if editor.selected:value='';cursor=0
+            elif key==keys.KEY_DC:value=value[:cursor]+value[cursor+1:]
+            elif cursor:value=value[:cursor-1]+value[cursor:];cursor-=1
+            editor.selected=False
+        elif isinstance(key,str) and key.isprintable() and len(value)<8000:
+            if editor.selected:value='';cursor=0
+            value=value[:cursor]+key+value[cursor:];cursor+=1;editor.selected=False
+        return value,cursor
 
     def mod_actions(self,sim,mod_id):
         packages,errors=sim.installed_mods()
@@ -108,6 +166,9 @@ class Navigation:
             self.indices[self.section] = value
 
     def items(self, sim):
+        if self.pages and self.pages[-1].builder:
+            from builder_ui import items
+            return items(sim,self.pages[-1].builder)
         if self.pages:
             if self.pages[-1].mod_id:
                 mod_id=self.pages[-1].mod_id
@@ -145,7 +206,8 @@ class Navigation:
             if not entries:entries.append(Item('No mods installed','In Terminal: sol-sim -m "username/repository". /mod tutorial explains installation.',('/mod tutorial',)))
             return (*entries,
                     Item('Installed mods', 'List installed versions and diagnose invalid packages.', ('/mods list',),stay=True),
-                    Item('Create a mod', 'Tutorial, template, validation and public sharing.', ('/mod tutorial',)),
+                    Item('Create a mod', 'Build a star, planets and moons, edit notes, then export a publishable folder.', builder='home'),
+                    Item('Modding tutorial (JSON)', 'The original template and manual editing workflow.', ('/mod tutorial',)),
                     Item('Return to Solar System', 'Leave the optional system catalogue.', ('/mod exit',)))
         if section in ('Planets', 'Moons', 'Spacecraft', 'Dwarfs'):
             bodies = {'Planets': (sim.mod_bodies[0],*sim.primary_bodies) if sim.community_mode else tuple(sim.mod_bodies) if sim.mod_mode else (SUN,*PLANETS),
@@ -203,6 +265,7 @@ class Navigation:
         self.feedback = ''
 
     def change_section(self, amount):
+        self.editor=None
         self.section = (self.section+amount)%len(self.sections)
         self.pages.clear()
         self.feedback = ''
@@ -216,6 +279,14 @@ class Navigation:
 
     def activate(self, sim):
         item = self.current(sim)
+        if item and item.edit:
+            self.editor=Editor(item.label,item.edit,item.value)
+            self.feedback='Editing '+item.label+' / Enter saves / Esc cancels / Ctrl+U clears'
+            return None
+        if item and item.builder:
+            self.pages.append(Page(item.label,(),builder=item.builder))
+            self.feedback=''
+            return None
         if item and item.mod_id:
             self.pages.append(Page(item.label,(),mod_id=item.mod_id))
             self.feedback=''
@@ -256,6 +327,9 @@ class Navigation:
                 self.feedback = response.splitlines()[0]
                 return response
         self.feedback = 'Applied: '+item.label
+        if commands and commands[0].startswith('/builder '):
+            if commands[0].startswith(('/builder delete ','/builder load ')):self.open_builder(sim)
+            self.feedback=response.splitlines()[0].replace(str(sim.builder.root),'') if response else ''
         if commands and commands[0].startswith(('/mods enable ','/mods disable ')) and self.pages:
             # Keep Enter on the switch after its action list changes, away from Uninstall.
             self.index=next(i for i,entry in enumerate(self.items(sim)) if entry.label.startswith('Turn '))

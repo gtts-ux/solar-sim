@@ -90,7 +90,11 @@ This is a **fictional schematic**, with film-inspired descriptions and explicitl
 
 Anyone can publish a system catalogue without changing Solar Sim's code or joining a registry. Version **1.10.0+** installs community JSON from a local file, a public **GitHub owner/repository**, or a direct GitHub JSON link. Mods can add their own central star or black hole, planets, dwarfs and moons in a separate catalogue.
 
-Read the complete [mod-making tutorial](MODDING.txt), use `sol-sim --mod-tutorial` in Terminal, or `/mod tutorial` in the app. From a new project folder:
+Read the complete [mod-making tutorial](MODDING.txt), use `sol-sim --mod-tutorial` in Terminal, or `/mod tutorial` in the app.
+
+The **in-app mod maker** opens with `/builder` or **Mods → Create a mod**. Use arrows and Enter to add a central star, planets and moons linked to their parent planets. Forms edit size, mass, day length, orbit elements, composition, atmosphere and notes. Drafts save automatically; **Export project folder** creates `mod-projects/ID/` with the standard `solar-mod.json`, README files, an editable draft and `PUBLISH.txt`. Existing exports stay intact. Upload the folder's contents to your public repository when ready. The JSON template workflow below is still available.
+
+For the manual workflow, run these commands from a new project folder:
 
 ```sh
 sol-sim --mod-template solar-mod.json

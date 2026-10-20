@@ -201,6 +201,21 @@ class TUIArrowTests(unittest.TestCase):
         self.assertFalse((self.sim.mods_path/'interstellar.json').exists())
         self.assertFalse(self.sim.mod_mode)
 
+    def test_builder_forms_use_arrows_for_editing_and_keep_invalid_values_open(self):
+        self.sim.mods_path=self.root/'mods'
+        self.sim.command('/builder new "Form system"')
+        self.sim.command('/builder add star Sol')
+        self.sim.command('/builder add planet Terra')
+        # Home: details, notes, Sol, Terra. Radius is field 4 in a planet form.
+        self.run_keys([*'/builder\r',258,258,258,'\r',258,258,258,258,'\r',
+                       *'7000',260,261,'\r','\x1b'])
+        self.assertEqual(self.sim.builder.body(2)['radius'],7000)
+        self.assertEqual(self.sim.camera.name,'system')
+        self.sim.running=True
+        self.run_keys([*'/builder\r',258,258,258,'\r',258,258,258,258,'\r',
+                       *'-5','\r','\x1b'])
+        self.assertEqual(self.sim.builder.body(2)['radius'],7000)
+
     def test_settings_arrows_select_and_preview_saver_then_apply_theme_without_zoom(self):
         self.sim.command('/orbit jupiter')
         previews,_=self.run_keys([*'/setting\r',258,'\r',258,258,'\r',

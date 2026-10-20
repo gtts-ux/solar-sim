@@ -303,6 +303,24 @@ try:
     send(virtual=0x28);send('\r');expect('Applied: Uninstall')
     assert not (mods/'aurora-system.json').exists()
     assert json.loads((root/'settings.json').read_text())['screensaver']=='moon-view'
+    send(virtual=0x71)
+    # Author a complete project using physical arrows and inline form fields.
+    send('/builder\r');expect('MOD MAKER');send('\r');expect('Edit New mod...')
+    send('Menu system\r');expect('Created draft: Menu system')
+    send(virtual=0x28);send(virtual=0x28);send('\r');expect('Edit Add star')
+    send('Sunlet\r');expect('Added Sunlet');send('\x1b')
+    send(virtual=0x24)
+    for _ in range(3):send(virtual=0x28)
+    send('\r');expect('Edit Add planet');send('Blue\r');expect('Added Blue')
+    send(virtual=0x23);send(virtual=0x26);send('\r');expect('Edit Add moon')
+    send('Dot\r');expect('Added Dot');send('\x1b');send('\x1b')
+    send(virtual=0x23)
+    for _ in range(3):send(virtual=0x26)
+    send('\r');expect('Mod project exported:')
+    authored=json.loads((root/'mod-projects/menu-system/solar-mod.json').read_text())
+    assert [b['name'] for b in authored['bodies']]==['Sunlet','Blue','Dot']
+    assert authored['bodies'][2]['parent']=='Blue'
+    assert (root/'mod-projects/menu-system/PUBLISH.txt').is_file()
     send(virtual=0x71);send('\x04')
     out,err=process.communicate(timeout=15)
     assert process.returncode==0,(out.decode('utf-8','replace'),err.decode('utf-8','replace'))

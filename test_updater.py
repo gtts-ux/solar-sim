@@ -37,6 +37,8 @@ class UpdaterTests(unittest.TestCase):
                        'exports/keep.json':b'export data','mods/proxima-centauri.json':b'installed mod data',
                        'mods/interstellar.json':b'installed film mod data',
                        'mods/.state.json':b'{"format":1,"disabled":["interstellar"]}',
+                       'mod-projects/draft.json':b'{"saved":"author draft"}',
+                       'mod-projects/my-system/README.txt':b'author project notes',
                        'mods/aurora-system.json':(Path(__file__).parent/'solar-mod.json').read_bytes(),
                        '.git/config':b'git metadata','notes.txt':b'personal notes'}
         for name,data in self.original.items():

@@ -12,9 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 FILES = (
     'START_HERE.txt', 'GETTING_STARTED.txt', 'MODDING.txt', 'solar-mod.json', 'README.md', 'README.txt', 'GITHUB_SETUP.md', 'SOURCES.txt', 'VERSION.txt',
     'Start Solar Sim.command', 'Start Solar Sim.sh', 'Start Solar Sim.bat', 'Install Solar Sim Commands.bat', 'install_commands.py',
-    'solar_sim.py', 'windows_console.py', 'updater.py', 'engine.py', 'proxima.py', 'interstellar.py', 'mod_manager.py', 'community_mods.py', 'community_runtime.py', 'mod_catalogue/proxima-centauri.json', 'mod_catalogue/interstellar.json', 'navigation.py', 'catalog.py', 'ephemeris.py', 'missions.py',
+    'solar_sim.py', 'windows_console.py', 'updater.py', 'engine.py', 'proxima.py', 'interstellar.py', 'mod_manager.py', 'community_mods.py', 'community_runtime.py', 'mod_builder.py', 'builder_ui.py', 'mod_catalogue/proxima-centauri.json', 'mod_catalogue/interstellar.json', 'navigation.py', 'catalog.py', 'ephemeris.py', 'missions.py',
     'day_lengths.py', 'flight_replay.py', 'screensaver.py', 'screensaver_scenes.py', 'themes.py', 'camera.py', 'live_launches.py',
-    'test_solar_sim.py', 'test_screensaver.py', 'test_distribution.py', 'test_controls.py', 'test_commands.py', 'test_windows_console.py', 'test_navigation.py', 'test_updater.py', 'test_mods.py', 'test_interstellar.py', 'test_community_mods.py', 'test_mod_controls.py',
+    'test_solar_sim.py', 'test_screensaver.py', 'test_distribution.py', 'test_controls.py', 'test_commands.py', 'test_windows_console.py', 'test_navigation.py', 'test_updater.py', 'test_mods.py', 'test_interstellar.py', 'test_community_mods.py', 'test_mod_controls.py', 'test_mod_builder.py',
     '.gitignore', '.gitattributes', 'tools/build_release.py', 'tools/smoke_update.py',
     '.github/workflows/checks.yml', '.github/workflows/release.yml',
 )

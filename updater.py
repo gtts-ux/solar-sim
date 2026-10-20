@@ -22,7 +22,7 @@ LATEST=f'https://api.github.com/repos/{REPO}/releases/latest'
 MANIFEST='RELEASE_MANIFEST.json'
 MAX_DOWNLOAD=32*1024*1024
 MAX_EXPANDED=64*1024*1024
-PROTECTED={'settings.json','launch_cache.json','ephemeris_cache.json','exports','update-backups','mods',
+PROTECTED={'settings.json','launch_cache.json','ephemeris_cache.json','exports','update-backups','mods','mod-projects',
            '.git','.venv','venv','__pycache__','.solar-sim-update.lock'}
 ESSENTIAL={'solar_sim.py','engine.py','VERSION.txt','updater.py','GETTING_STARTED.txt','install_commands.py','Start Solar Sim.sh'}
 
